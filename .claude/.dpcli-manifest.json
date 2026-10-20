@@ -1,0 +1,13 @@
+{
+  "files": {
+    ".claude/agents/dp-coordinator.md": "d5aa4e0f7361663d4aeca8e280c951ca83e0ff36090d93de9e60ee9845997b99",
+    ".claude/agents/dp-engineer.md": "e5eeaf341be987b3380567d99cc22cbeafe1399cc0bf9883cd8624f3a572d4cf",
+    ".claude/agents/dp-mechanic.md": "92db44aabd55b53452e06f2672a042017a311dd57c359662e8683cf1f71a0e2b",
+    ".claude/agents/dp-researcher.md": "1bb9b87252e95ba43ea337c62d6a581bc1c9abed6a543b9fa9647c8453aa67ed",
+    ".claude/agents/dp-reviewer.md": "751ac3c39e048f8f494beb5102569d8a18ff4e3598491088d62e879e7b4262c3",
+    ".claude/agents/dp-status.md": "49116f4c739ecd7b3fd77d7e3899938b2fa62bb1f6fe752172be7d675b4a5f23",
+    ".claude/agents/dp-writer.md": "0d6cc47e665a9fbb911e069718a4d5ddd7e90bfa8f09e3533340bb7126cd2ba1",
+    ".claude/dpcli-workflow.md": "f9d13692d6ead3cd7a07c32d65a0a4e339c5dcd41475b32b70e359ef79679cbc",
+    ".claude/skills/start-to-do/SKILL.md": "511b04a65bd0b808ff2d9419dbcd5f9142a8d808a2faa08756ce476614963cac"
+  }
+}
