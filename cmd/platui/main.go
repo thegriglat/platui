@@ -4,7 +4,6 @@ package main
 import (
 	"context"
 	"errors"
-	"net/http"
 	"os"
 	"os/signal"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/thegriglat/platui/internal/cli"
 	"github.com/thegriglat/platui/internal/config"
 	"github.com/thegriglat/platui/internal/gitbranch"
+	"github.com/thegriglat/platui/internal/httpclient"
 	"github.com/thegriglat/platui/internal/plane"
 	"github.com/thegriglat/platui/internal/tui"
 )
@@ -31,10 +31,14 @@ func main() {
 }
 
 func build(cfg *config.Config, repoDir string) (*app.App, error) {
+	hc, err := httpclient.New(httpclient.Options{Timeout: cfg.HTTPTimeout(), CAFile: cfg.HTTPCAFile()})
+	if err != nil {
+		return nil, err
+	}
 	d := app.Deps{
 		API: plane.New(plane.Options{
 			BaseURL: cfg.BaseURL, APIKey: cfg.Key(), Workspace: cfg.Workspace, WebURL: cfg.WebURL,
-			HTTPClient: &http.Client{Timeout: cfg.HTTPTimeout()}, MaxRetries: maxRetries(cfg.HTTPRetries()),
+			HTTPClient: hc, MaxRetries: maxRetries(cfg.HTTPRetries()),
 		}),
 		Config: cfg,
 	}

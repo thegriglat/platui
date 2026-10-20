@@ -5,7 +5,7 @@ module: "tui"
 updated: "2026-10-20"
 summary: "Стыки сервисного слоя tui — пакеты text, forge, cache, search и app (сценарии поверх plane и gitbranch для TUI и CLI)"
 related: ["docs/contracts/tui.md", "docs/plan/tui.md"]
-contracts: [{"id": "C5", "version": 7}, {"id": "C6", "version": 2}, {"id": "C7", "version": 2}, {"id": "C8", "version": 1}, {"id": "C9", "version": 4}, {"id": "C10", "version": 4}]
+contracts: [{"id": "C6", "version": 2}, {"id": "C7", "version": 2}, {"id": "C8", "version": 1}, {"id": "C5", "version": 7}, {"id": "C9", "version": 4}, {"id": "C10", "version": 4}]
 ---
 
 # Контракты сервисного слоя модуля tui

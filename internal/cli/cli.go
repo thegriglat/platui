@@ -192,6 +192,9 @@ func Run(ctx context.Context, args []string, env Env) int {
 		return 3
 	case app.IsNetworkError(err):
 		fmt.Fprintf(env.Stderr, "platui: Plane недоступен: %v\n", err)
+		if app.IsCertError(err) {
+			fmt.Fprintf(env.Stderr, "platui: %s\n", app.CertHint)
+		}
 		return 4
 	}
 	fmt.Fprintf(env.Stderr, "platui: %v\n", err)

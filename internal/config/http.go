@@ -2,6 +2,9 @@ package config
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -18,6 +21,7 @@ const (
 type HTTP struct {
 	Timeout *time.Duration `yaml:"timeout"`
 	Retries *int           `yaml:"retries"`
+	CAFile  string         `yaml:"ca_file"`
 }
 
 func (c *Config) validateHTTP() error {
@@ -44,4 +48,15 @@ func (c *Config) HTTPRetries() int {
 		return DefaultHTTPRetries
 	}
 	return *c.HTTP.Retries
+}
+
+// HTTPCAFile returns http.ca_file with a leading "~/" expanded; empty if unset (C1 v8).
+func (c *Config) HTTPCAFile() string {
+	p := c.HTTP.CAFile
+	if p == "~" || strings.HasPrefix(p, "~/") {
+		if home, err := os.UserHomeDir(); err == nil {
+			return filepath.Join(home, p[1:])
+		}
+	}
+	return p
 }

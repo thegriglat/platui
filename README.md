@@ -77,6 +77,10 @@ Notes:
 - `todo.path` — personal todo file; default `$XDG_DATA_HOME/platui/todo.md` or `~/.local/share/platui/todo.md`.
 - `NO_COLOR` (or `theme.no_color: true`) disables colors.
 
+### Custom CA (self-hosted Plane over HTTPS)
+
+If Plane uses a certificate from your own CA, add it to the system ones with `http.ca_file: ~/certs/my-ca.crt` (PEM, one or more certificates). `glab` and `git push` use their own CA settings: `glab config set ca_cert <file> --host <host>`, `git config http.sslCAInfo <file>`.
+
 ## Key bindings
 
 Press `?` or `h` in the app for the full list.

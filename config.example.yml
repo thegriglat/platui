@@ -88,3 +88,9 @@ commands:
     command: code -- {branch}
     confirm: false               # спрашивать подтверждение
     output: status               # status | window | none
+
+# --- HTTP к Plane ---
+# http:
+#   timeout: 30s
+#   retries: 3
+#   ca_file: ~/certs/my-ca.crt   # PEM с доверенными CA (один или несколько) — добавляются к системным, для self-hosted с собственным CA

@@ -27,8 +27,12 @@ func (n netState) offlineText() string {
 // кэша помечает как офлайн.
 func (s *session) errText(err error) string {
 	s.net.failing = true
+	msg := err.Error()
+	if app.IsCertError(err) {
+		msg += " (" + app.CertHint + ")"
+	}
 	if !app.IsNetworkError(err) {
-		return err.Error()
+		return msg
 	}
 	var at time.Time
 	if off, t := s.deps.App.Offline(); off {
@@ -40,10 +44,10 @@ func (s *session) errText(err error) string {
 		}
 	}
 	if at.IsZero() {
-		return err.Error()
+		return msg
 	}
 	s.net.offline, s.net.offAt = true, at
-	return s.net.offlineText() + ": " + err.Error()
+	return s.net.offlineText() + ": " + msg
 }
 
 // restored снимает офлайн и ошибку; true, если связь действительно восстановилась.

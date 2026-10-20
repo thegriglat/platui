@@ -18,6 +18,7 @@ generated: true
 
 ## Модули без area
 
+- **certs** — Свой CA для HTTPS к Plane — http.ca_file в конфиге (добавляется к системным, как NODE_EXTRA_CA_CERTS), подсказка при ошибке сертификата [closed 2026-10-20] — [план](plan/certs.md) · [контракты](contracts/certs.md) · [решения](plan/certs/decisions.md) · [сводка](plan/certs/summary.md) · полный журнал: `archive/certs`
 - **tui** — TUI-клиент таск-менеджера Plane на Go (Bubble Tea): проекты, задачи, правка, создание git-ветки из задачи; конфиг в YAML [closed 2026-10-20] — [план](plan/tui.md) · [контракты](contracts/tui.md) · [решения](plan/tui/decisions.md) · [сводка](plan/tui/summary.md) · полный журнал: `archive/tui`
   - [docs/contracts/tui-features.md](contracts/tui-features.md) — Вторая волна фич tui: diff stat, свои команды, закладки, дубли, ссылки, мышь, панели, подзадачи; C11 runner [closed]
   - [docs/contracts/tui-plane.md](contracts/tui-plane.md) — Контракт C3 пакета internal/plane — типы, интерфейс API, клиент REST API Plane v1 (wire), фейк planetest [closed]
