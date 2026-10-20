@@ -1,3 +1,9 @@
 .read_*
 build/dpcli/
 __pycache__/
+
+# Go
+/platui
+/dist/
+*.test
+*.out
