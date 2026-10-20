@@ -16,7 +16,8 @@ for an issue with a single key.
 - **Git integration**
   - create a branch for an item from a template (`{identifier}-{sequence}-{slug}`), optionally in a `git worktree`;
   - "start work": branch + move to *In Progress* + assign to yourself;
-  - "ready for review": push + open a PR/MR via `gh` or `glab`, link it in a comment, move to *In Review*;
+  - "ready for review": push + open a GitLab merge request via [`glab`](https://gitlab.com/gitlab-org/cli), link it in a comment, move to *In Review*;
+  - "go to MR": find the merge request of an item and open it in the browser;
   - detect the item from the current branch name; commit message template / `prepare-commit-msg` hook;
   - clean up branches of closed items.
 - **Editing** — change state and priority, assign, create items (one-line quick add: `fix login !high @me #bug`),
@@ -25,11 +26,11 @@ for an issue with a single key.
   copy ID / link / branch name to the clipboard via OSC 52 (works over SSH), time tracking, background refresh,
   on-disk cache for instant start-up.
 - **Scriptable CLI** — `platui ls --mine --json`, `platui show PROJ-42`, `platui branch PROJ-42`,
-  `platui start PROJ-42`, `platui prompt` (for shell prompts / tmux status lines).
+  `platui start PROJ-42`, `platui mr PROJ-42 --open`, `platui prompt` (for shell prompts / tmux status lines).
 
 ## Installation
 
-Requires Go 1.24+.
+Requires Go 1.24+. Merge request features need [`glab`](https://gitlab.com/gitlab-org/cli) (GitLab only).
 
 ```sh
 go install github.com/thegriglat/platui/cmd/platui@latest
@@ -58,7 +59,7 @@ branch:
 ```
 
 Create an API key in Plane under *Profile settings → Personal Access Tokens*.
-All options (tabs, saved filters, worktrees, PR tool, theme, refresh interval, cache) will be documented in
+All options (tabs, saved filters, worktrees, GitLab, theme, refresh interval, cache) will be documented in
 `config.example.yml`.
 
 ## Key bindings
@@ -70,7 +71,7 @@ Press `?` or `h` in the app for the full list.
 | Navigation | `↑/↓`, `PgUp/PgDn`, `Home/End`, `Enter` open, `Esc` back, `Tab`/`Shift+Tab` switch pane, `Ctrl+←/→` or `Alt+1…9` switch tab, `P` projects |
 | Search | `/` search, `Ctrl+G` go to ID, `Ctrl+P` command palette |
 | Work item | `s` state, `p` priority, `a` assign to me, `e` edit description, `c` comment, `n` new, `y` copy, `O` open in browser, `t` timer, `space` select |
-| Git | `b` create branch, `S` start work, `W` ready for review, `X` clean up branches |
+| Git | `b` create branch, `S` start work, `W` ready for review, `M` go to MR, `X` clean up branches |
 | Views | `v` kanban, `m` mine, `F` saved filters, `o` sort, `R` refresh from API, `q` quit |
 
 ## Development
