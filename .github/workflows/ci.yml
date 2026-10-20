@@ -16,7 +16,7 @@ jobs:
       - name: Check for Go module
         id: gomod
         run: test -f go.mod && echo "present=true" >> "$GITHUB_OUTPUT" || echo "present=false" >> "$GITHUB_OUTPUT"
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@v7
         if: steps.gomod.outputs.present == 'true'
         with:
           go-version-file: go.mod
