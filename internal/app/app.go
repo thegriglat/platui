@@ -1,5 +1,5 @@
-// Package app — сервисный слой platui: сценарии поверх plane, gitbranch,
-// forge и cache, общие для TUI и CLI (контракт C5 v1).
+// Package app is the platui service layer: scenarios on top of plane, gitbranch,
+// forge and cache, shared by the TUI and the CLI (contract C5 v1).
 package app
 
 import (
@@ -24,18 +24,18 @@ import (
 	"github.com/thegriglat/platui/internal/runner"
 )
 
-// Deps — внешние зависимости сценариев.
+// Deps are the external dependencies of the scenarios.
 type Deps struct {
 	API    plane.API
-	Git    gitbranch.Git // nil — не git-репозиторий: git-сценарии → ErrNoRepo
-	Forge  forge.Tool    // nil → forge.New по cfg.GitLab
-	Store  cache.Store   // nil → без кэша
+	Git    gitbranch.Git // nil: not a git repository, git scenarios return ErrNoRepo
+	Forge  forge.Tool    // nil: forge.New from cfg.GitLab
+	Store  cache.Store   // nil: no cache
 	Config *config.Config
 	Now    func() time.Time // nil → time.Now
 	Shell  runner.Shell     // nil → runner.Default()
 }
 
-// Ошибки сценариев.
+// Scenario errors.
 var (
 	ErrNoRepo          = errors.New("not in a git repository")
 	ErrNoItemForBranch = errors.New("current branch does not reference a work item")
@@ -46,7 +46,7 @@ var (
 	ErrNoTimer         = errors.New("no running timer")
 )
 
-// Meta — справочники проекта.
+// Meta holds the project reference data.
 type Meta struct {
 	Project plane.Project
 	States  []plane.State
@@ -54,7 +54,7 @@ type Meta struct {
 	Labels  []plane.Label
 }
 
-// App — сервисный слой; безопасен для вызова из нескольких горутин.
+// App is the service layer; safe to call from multiple goroutines.
 type App struct {
 	d Deps
 
@@ -72,7 +72,7 @@ type App struct {
 	offAt   time.Time
 }
 
-// New создаёт App.
+// New creates an App.
 func New(d Deps) *App {
 	if d.Now == nil {
 		d.Now = time.Now
@@ -108,14 +108,14 @@ func (a *App) load(key string, v any) (time.Time, bool) {
 	return t, ok && err == nil
 }
 
-// save — сбой кэша не ломает сценарий.
+// save: a cache failure does not break the scenario.
 func (a *App) save(key string, v any) {
 	if a.d.Store != nil {
 		_ = a.d.Store.Save(key, v)
 	}
 }
 
-// Me — текущий пользователь; один запрос за жизнь App.
+// Me returns the current user; one request per App lifetime.
 func (a *App) Me(ctx context.Context) (plane.Member, error) {
 	a.mu.Lock()
 	if a.me != nil {
@@ -141,7 +141,7 @@ func (a *App) Me(ctx context.Context) (plane.Member, error) {
 	return m, nil
 }
 
-// Projects — проекты workspace (в памяти на время жизни App).
+// Projects returns the workspace projects (in memory for the App lifetime).
 func (a *App) Projects(ctx context.Context) ([]plane.Project, error) {
 	a.mu.Lock()
 	if a.projects != nil {
@@ -167,7 +167,7 @@ func (a *App) Projects(ctx context.Context) ([]plane.Project, error) {
 	return ps, nil
 }
 
-// Project ищет проект по identifier без учёта регистра.
+// Project finds a project by identifier, case-insensitively.
 func (a *App) Project(ctx context.Context, identifier string) (plane.Project, error) {
 	ps, err := a.Projects(ctx)
 	if err != nil {
@@ -181,7 +181,7 @@ func (a *App) Project(ctx context.Context, identifier string) (plane.Project, er
 	return plane.Project{}, fmt.Errorf("%w: %s", ErrProjectNotFound, identifier)
 }
 
-// Meta — справочники проекта (память, иначе сеть).
+// Meta returns the project reference data (memory, otherwise network).
 func (a *App) Meta(ctx context.Context, projectID string) (Meta, error) {
 	a.mu.Lock()
 	m, ok := a.meta[projectID]
@@ -237,18 +237,18 @@ func (a *App) fetchMeta(ctx context.Context, projectID string) (Meta, error) {
 	return m, nil
 }
 
-// Invalidate сбрасывает Meta проекта в памяти.
+// Invalidate drops the project's in-memory Meta.
 func (a *App) Invalidate(projectID string) {
 	a.mu.Lock()
 	delete(a.meta, projectID)
 	a.mu.Unlock()
 }
 
-// IsNetworkError — сетевая ошибка по C10 v4 (код выхода 4): *url.Error, net.Error,
-// context.DeadlineExceeded, обрыв соединения (io.ErrUnexpectedEOF, ECONNRESET),
-// TLS/x509, APIError со статусом >= 500, plane.ErrRateLimited. Авторизация, 404,
-// отмена, разбор ответа и прочие ошибки — не сетевые. Ошибка, потерявшая тип при
-// оборачивании текстом, распознаётся по характерным сообщениям сетевого стека.
+// IsNetworkError reports a network error per C10 v4 (exit code 4): *url.Error, net.Error,
+// context.DeadlineExceeded, a dropped connection (io.ErrUnexpectedEOF, ECONNRESET),
+// TLS/x509, APIError with status >= 500, plane.ErrRateLimited. Authorization, 404,
+// cancellation, response parsing and other errors are not network errors. An error that lost its type when
+// wrapped as text is recognized by the network stack's characteristic messages.
 func IsNetworkError(err error) bool {
 	if err == nil || errors.Is(err, context.Canceled) || errors.Is(err, plane.ErrUnauthorized) || errors.Is(err, plane.ErrNotFound) {
 		return false
@@ -284,7 +284,7 @@ func IsNetworkError(err error) bool {
 	return false
 }
 
-// fallback читает кэш при сетевой ошибке.
+// fallback reads the cache on a network error.
 func (a *App) fallback(err error, key string, v any) (time.Time, bool) {
 	if !IsNetworkError(err) {
 		return time.Time{}, false
@@ -307,8 +307,8 @@ func (a *App) online() {
 	a.mu.Unlock()
 }
 
-// Offline — true, если последняя попытка сети не удалась и данные отданы из кэша;
-// время — saved самого старого из отданных кэшей.
+// Offline is true if the last network attempt failed and the data came from the cache;
+// the time is the saved time of the oldest cache served.
 func (a *App) Offline() (bool, time.Time) {
 	a.mu.Lock()
 	defer a.mu.Unlock()

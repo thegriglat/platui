@@ -12,30 +12,30 @@ import (
 	"github.com/thegriglat/platui/internal/text"
 )
 
-// execProcess подменяется в тестах.
+// runEditor is replaced in tests.
 var runEditor = func(sess *text.EditSession, editor string, fn tea.ExecCallback) tea.Cmd {
 	return tea.ExecProcess(sess.Command(editor), fn)
 }
 
-// editDoneMsg — редактор закрыт; sess читается и удаляется в finishEdit.
+// editDoneMsg reports that the editor was closed; sess is read and removed in finishEdit.
 type editDoneMsg struct {
 	kind      string // "desc" | "comment"
 	projectID string
 	itemID    string
-	loaded    time.Time // UpdatedAt задачи на момент открытия редактора
+	loaded    time.Time // task UpdatedAt when the editor was opened
 	sess      *text.EditSession
 	err       error
 }
 
-// startEdit открывает $EDITOR на временном файле с initial; если прошлая отправка
-// этой правки не удалась — сначала предлагает сохранённый текст.
+// startEdit opens $EDITOR on a temporary file with initial; if the previous submit
+// of this edit failed, it first offers the saved text.
 func startEdit(s *session, kind string, it plane.WorkItem, initial, hint string) tea.Cmd {
 	if d, ok := s.savedDraft(kind, it.ID); ok && s.project != nil {
 		pid := s.project.ID
 		msg := editDoneMsg{kind: kind, projectID: pid, itemID: it.ID, loaded: d.loaded, sess: d.sess}
-		c := &confirmScreen{question: "Использовать сохранённый текст? y/N\n" + d.sess.Path,
+		c := &confirmScreen{question: "Use the saved text? y/N\n" + d.sess.Path,
 			yes: func() tea.Cmd { return finishEdit(s, msg) },
-			// отказ — файл удаляется, правка как в первый раз
+			// refusal: the file is removed and the edit starts afresh
 			no: func() tea.Cmd {
 				d.sess.Close()
 				return openEditor(s, kind, it, initial, hint)
@@ -57,18 +57,18 @@ func openEditor(s *session, kind string, it plane.WorkItem, initial, hint string
 	})
 }
 
-// finishEdit читает результат правки и отправляет в Plane. Файл удаляется при
-// успехе, отмене и ошибке редактора; при ошибке отправки остаётся (editFailMsg).
+// finishEdit reads the edit result and sends it to Plane. The file is removed on
+// success, cancel and editor error; on a submit error it is kept (editFailMsg).
 func finishEdit(s *session, m editDoneMsg) tea.Cmd {
 	if m.err != nil {
 		m.sess.Close()
-		return errCmd(errors.New("редактор: " + m.err.Error()))
+		return errCmd(errors.New("editor: " + m.err.Error()))
 	}
 	md, err := m.sess.Result()
 	if err != nil {
 		m.sess.Close()
 		if errors.Is(err, text.ErrEmptyEdit) {
-			s.setStatus("пустой текст — отменено", false)
+			s.setStatus("empty text, cancelled", false)
 			return nil
 		}
 		return errCmd(err)
@@ -84,7 +84,7 @@ func finishEdit(s *session, m editDoneMsg) tea.Cmd {
 				return fail(err)
 			}
 			m.sess.Close()
-			return tea.BatchMsg{func() tea.Msg { return statusMsg{"комментарий добавлен", false} },
+			return tea.BatchMsg{func() tea.Msg { return statusMsg{"comment added", false} },
 				func() tea.Msg { return loadComments(s, m.projectID, m.itemID)() }}
 		}
 		cur, err := a.Item(ctx, m.projectID, m.itemID)
@@ -93,10 +93,10 @@ func finishEdit(s *session, m editDoneMsg) tea.Cmd {
 		}
 		save := func() tea.Cmd { return saveDescription(a, m, md, fail) }
 		if cur.UpdatedAt.After(m.loaded) {
-			ask := pushScreen(&confirmScreen{question: "Описание изменилось в Plane после загрузки, перезаписать?",
+			ask := pushScreen(&confirmScreen{question: "Description changed in Plane since loading, overwrite?",
 				yes: save,
-				// отказ — текст не теряется: сессия в черновики
-				no: func() tea.Cmd { return func() tea.Msg { return fail(errors.New("отменено")) } }})
+				// refusal keeps the text: the session goes to drafts
+				no: func() tea.Cmd { return func() tea.Msg { return fail(errors.New("cancelled")) } }})
 			return tea.BatchMsg{func() tea.Msg { return itemMsg{item: cur} }, ask}
 		}
 		return save()()
@@ -111,19 +111,19 @@ func saveDescription(a *app.App, m editDoneMsg, md string, fail func(error) tea.
 		}
 		m.sess.Close()
 		return tea.BatchMsg{func() tea.Msg { return itemMsg{item: it} },
-			func() tea.Msg { return statusMsg{"описание обновлено", false} }}
+			func() tea.Msg { return statusMsg{"description updated", false} }}
 	}
 }
 
 func errCmd(err error) tea.Cmd { return func() tea.Msg { return errStatus(err) } }
 
 func init() {
-	registerAction(action{ID: "item.edit", Title: "Описание в $EDITOR", Group: "задача", Keys: []string{"e"}, Hint: "описание", Scopes: cardScopes,
+	registerAction(action{ID: "item.edit", Title: "Description in $EDITOR", Group: "task", Keys: []string{"e"}, Hint: "description", Scopes: cardScopes,
 		Run: withTarget(func(m *model, it plane.WorkItem) tea.Cmd {
 			return startEdit(m.s, "desc", it, text.HTMLToMarkdown(it.DescHTML), "")
 		})})
-	registerAction(action{ID: "item.comment", Title: "Комментарий в $EDITOR", Group: "задача", Keys: []string{"c"}, Hint: "коммент", Scopes: cardScopes,
+	registerAction(action{ID: "item.comment", Title: "Comment in $EDITOR", Group: "task", Keys: []string{"c"}, Hint: "comment", Scopes: cardScopes,
 		Run: withTarget(func(m *model, it plane.WorkItem) tea.Cmd {
-			return startEdit(m.s, "comment", it, "", "Комментарий к "+itoaKey(m.s, it.Sequence)+" (Markdown); пустой — отмена")
+			return startEdit(m.s, "comment", it, "", "Comment on "+itoaKey(m.s, it.Sequence)+" (Markdown); empty cancels")
 		})})
 }

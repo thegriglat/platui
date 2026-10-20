@@ -10,16 +10,16 @@ import (
 	"github.com/yuin/goldmark/util"
 )
 
-// md — CommonMark + GFM; сырой HTML (без WithUnsafe) выводится экранированным.
+// md is CommonMark + GFM; raw HTML (without WithUnsafe) is rendered escaped.
 var md = goldmark.New(
 	goldmark.WithExtensions(extension.GFM),
 	goldmark.WithRendererOptions(renderer.WithNodeRenderers(util.Prioritized(rawHTMLEscaper{}, 100))),
 )
 
-// rawHTMLEscaper выводит сырой HTML исходника как экранированный текст.
+// rawHTMLEscaper renders the source's raw HTML as escaped text.
 type rawHTMLEscaper struct{}
 
-// RegisterFuncs реализует renderer.NodeRenderer.
+// RegisterFuncs implements renderer.NodeRenderer.
 func (rawHTMLEscaper) RegisterFuncs(reg renderer.NodeRendererFuncRegisterer) {
 	reg.Register(ast.KindRawHTML, rawInline)
 	reg.Register(ast.KindHTMLBlock, rawBlock)
@@ -53,7 +53,7 @@ func rawBlock(w util.BufWriter, src []byte, n ast.Node, entering bool) (ast.Walk
 	return ast.WalkSkipChildren, nil
 }
 
-// MarkdownToHTML переводит Markdown в HTML.
+// MarkdownToHTML converts Markdown to HTML.
 func MarkdownToHTML(src string) string {
 	var buf bytes.Buffer
 	if err := md.Convert([]byte(src), &buf); err != nil {

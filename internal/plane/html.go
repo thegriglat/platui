@@ -13,7 +13,7 @@ var (
 	reBlankLines = regexp.MustCompile(`\n{3,}`)
 )
 
-// HTMLToText: абзацы/<br>/<li> → переводы строк, сущности раскодированы, теги убраны.
+// HTMLToText: paragraphs/<br>/<li> → line breaks, entities decoded, tags stripped.
 func HTMLToText(s string) string {
 	s = reLiStart.ReplaceAllString(s, "- ")
 	s = reBlockEnd.ReplaceAllString(s, "\n")

@@ -64,7 +64,7 @@ func printRows(cmd *cobra.Command, rows []row, asJSON bool) error {
 	return nil
 }
 
-// orderByStates оставляет видимые состояния и сортирует по StateTabs, затем по номеру.
+// orderByStates keeps visible states and sorts by StateTabs, then by number.
 func orderByStates(s *session, items []plane.WorkItem, m app.Meta, only string, all bool) []plane.WorkItem {
 	cfg := *s.cfg
 	if all || only != "" {

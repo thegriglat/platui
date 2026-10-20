@@ -7,7 +7,7 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// Prompt — строка для приглашения оболочки/tmux: только кэш и git, без сети.
+// Prompt returns the line for a shell/tmux prompt: cache and git only, no network.
 func (a *App) Prompt() string {
 	if a.d.Git == nil {
 		return ""

@@ -7,10 +7,10 @@ import (
 	"strings"
 )
 
-// CertHint — подсказка при ошибке проверки сертификата сервера (C10 v5).
-const CertHint = "сертификат сервера не доверен — укажите CA в http.ca_file"
+// CertHint is the hint for a server certificate verification error (C10 v5).
+const CertHint = "server certificate is not trusted — set the CA in http.ca_file"
 
-// IsCertError — ошибка проверки сертификата сервера (в т.ч. потерявшая тип: по тексту "x509:").
+// IsCertError reports a server certificate verification error (including one that lost its type: matched by the "x509:" text).
 func IsCertError(err error) bool {
 	if err == nil {
 		return false

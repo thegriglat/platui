@@ -24,7 +24,7 @@ func wheel(x, y int, up bool) tea.MouseMsg {
 func TestContractTUIV6Mouse(t *testing.T) {
 	m, _, _, _ := newTestModel(t)
 	s := m.s
-	// клик по табу
+	// click on a tab
 	sp := s.tabSpans(s.width)
 	if sp[2][1] <= sp[2][0] {
 		t.Fatalf("spans=%v", sp)
@@ -33,7 +33,7 @@ func TestContractTUIV6Mouse(t *testing.T) {
 	if s.tab != 2 {
 		t.Fatalf("tab=%d", s.tab)
 	}
-	// клик по строке: курсор (вид отрисован — как между событиями в программе)
+	// click on a row: cursor (view is rendered — as between events in the program)
 	view(m)
 	vis := s.visible()
 	if len(vis) < 3 {
@@ -44,9 +44,9 @@ func TestContractTUIV6Mouse(t *testing.T) {
 		t.Fatalf("cursor=%s want %s", s.cursor, vis[2].ID)
 	}
 	if s.openItem != "" {
-		t.Fatal("одиночный клик открыл карточку")
+		t.Fatal("single click opened the card")
 	}
-	// двойной клик по той же строке в пределах 400 мс — карточка
+	// double click on the same row within 400 ms — card
 	now := t0
 	s.deps.Now = func() time.Time { return now }
 	feed(t, m, click(5, s.bodyTop()+1))
@@ -55,26 +55,26 @@ func TestContractTUIV6Mouse(t *testing.T) {
 	if s.openItem != vis[0].ID || len(m.stack) != 2 {
 		t.Fatalf("openItem=%q stack=%d", s.openItem, len(m.stack))
 	}
-	feed(t, m, click(5, s.bodyTop()+2)) // мышь на экране карточки игнорируется
+	feed(t, m, click(5, s.bodyTop()+2)) // mouse on the card screen is ignored
 	if len(m.stack) != 2 {
-		t.Fatal("клик изменил стек")
+		t.Fatal("click changed the stack")
 	}
 	m.pop()
-	// медленный второй клик — не двойной
+	// slow second click — not a double click
 	feed(t, m, click(5, s.bodyTop()+2))
 	now = now.Add(time.Second)
 	feed(t, m, click(5, s.bodyTop()+2))
 	if s.openItem != "" {
-		t.Fatal("медленный второй клик открыл карточку")
+		t.Fatal("slow second click opened the card")
 	}
 	view(m)
-	// клик по превью — фокус
+	// click on the preview — focus
 	lw, _ := s.paneWidths()
 	feed(t, m, click(lw+5, 5))
 	if s.focus != 1 {
 		t.Fatalf("focus=%d", s.focus)
 	}
-	// колёсико над таблицей двигает курсор
+	// wheel over the table moves the cursor
 	feed(t, m, click(5, s.bodyTop()+1))
 	feed(t, m, wheel(5, 5, false))
 	if s.cursor != s.visible()[len(s.visible())-1].ID {
@@ -84,12 +84,12 @@ func TestContractTUIV6Mouse(t *testing.T) {
 	if s.cursor != s.visible()[0].ID {
 		t.Fatalf("cursor after wheel up=%s", s.cursor)
 	}
-	// не-нажатия и области вне таблицы
+	// non-press events and areas outside the table
 	cur := s.cursor
 	feed(t, m, tea.MouseMsg{X: 5, Y: 6, Button: tea.MouseButtonLeft, Action: tea.MouseActionRelease})
 	feed(t, m, click(5, s.height-1))
 	if s.cursor != cur {
-		t.Fatal("курсор сдвинулся")
+		t.Fatal("cursor moved")
 	}
 }
 
@@ -125,27 +125,27 @@ func TestContractTUIV6MousePanels(t *testing.T) {
 	if s.panel.pct != 20 {
 		t.Fatalf("min pct=%d", s.panel.pct)
 	}
-	// на весь экран и обратно
+	// full screen and back
 	press(t, m, "z")
 	if l, r := s.paneWidths(); l != 0 || r != s.width || s.focus != 1 {
 		t.Fatalf("zoom l=%d r=%d", l, r)
 	}
 	if v := view(m); len(v) == 0 {
-		t.Fatal("пустой вид")
+		t.Fatal("empty view")
 	}
 	feed(t, m, click(3, 5))
 	if len(m.stack) != 1 {
-		t.Fatal("клик в режиме превью")
+		t.Fatal("click in preview mode")
 	}
 	press(t, m, "esc")
 	if s.panel.zoom {
-		t.Fatal("esc не закрыл zoom")
+		t.Fatal("esc did not close zoom")
 	}
 	press(t, m, "z", "z")
 	if s.panel.zoom {
-		t.Fatal("повторное z")
+		t.Fatal("second z")
 	}
-	// узкий терминал: одна панель, z — превью на весь экран
+	// narrow terminal: one pane, z is preview full screen
 	feed(t, m, tea.WindowSizeMsg{Width: 80, Height: 30})
 	if l, r := s.paneWidths(); r != 0 || l != 80 {
 		t.Fatalf("narrow l=%d r=%d", l, r)
@@ -156,7 +156,7 @@ func TestContractTUIV6MousePanels(t *testing.T) {
 	}
 }
 
-// Клик по каждому показанному табу выбирает его; границы — из той же раскладки, что и tabsLine, на двух ширинах.
+// A click on each shown tab selects it; bounds come from the same layout as tabsLine, at two widths.
 func TestMouseTabSpansBothWidths(t *testing.T) {
 	for _, w := range []int{120, 60} {
 		m, _, _, _ := newTestModel(t)
@@ -167,13 +167,13 @@ func TestMouseTabSpansBothWidths(t *testing.T) {
 			sp := s.tabSpans(w)
 			if i < l.lo || i > l.hi {
 				if sp[i] != [2]int{} {
-					t.Fatalf("w=%d: невидимый таб %d имеет span %v", w, i, sp[i])
+					t.Fatalf("w=%d: hidden tab %d has span %v", w, i, sp[i])
 				}
 				continue
 			}
 			feed(t, m, click(sp[i][0], 0))
 			if s.tab != i {
-				t.Fatalf("w=%d: клик по табу %d дал tab=%d (spans %v)", w, i, s.tab, sp)
+				t.Fatalf("w=%d: click on tab %d gave tab=%d (spans %v)", w, i, s.tab, sp)
 			}
 			l = s.tabsLayout(w)
 		}

@@ -7,33 +7,33 @@ import (
 )
 
 func init() {
-	registerAction(action{ID: "item.copy", Title: "Копировать (ID, URL, название, ветка, Markdown)", Group: "задача",
-		Keys: []string{"y"}, Hint: "копировать", Scopes: cardScopes,
+	registerAction(action{ID: "item.copy", Title: "Copy (ID, URL, title, branch, Markdown)", Group: "task",
+		Keys: []string{"y"}, Hint: "copy", Scopes: cardScopes,
 		Run: withTarget(func(m *model, it plane.WorkItem) tea.Cmd {
 			return pushScreen(newCopyMenu(m.s, it))
 		})})
 }
 
-// newCopyMenu — меню «что копировать»: i ID, u URL, t название, b ветка, m markdown.
+// newCopyMenu is the "what to copy" menu: i ID, u URL, t title, b branch, m markdown.
 func newCopyMenu(s *session, it plane.WorkItem) screen {
 	c := s.deps.App.CopyItems(*s.project, it)
 	vals := []struct{ hot, label, val string }{
-		{"i", "ID", c.ID}, {"u", "URL", c.URL}, {"t", "название", c.Title}, {"b", "имя ветки", c.Branch}, {"m", "Markdown-ссылка", c.Markdown},
+		{"i", "ID", c.ID}, {"u", "URL", c.URL}, {"t", "title", c.Title}, {"b", "branch name", c.Branch}, {"m", "Markdown link", c.Markdown},
 	}
 	rows := make([]pickRow, len(vals))
 	for i, v := range vals {
 		rows[i] = pickRow{Label: v.label + s.st.muted.Render("  "+v.val), Hot: v.hot}
 	}
-	return newListScreen("Копировать", rows, 0, func(i int) tea.Cmd {
+	return newListScreen("Copy", rows, 0, func(i int) tea.Cmd {
 		v := vals[i]
 		return func() tea.Msg {
 			if v.val == "" {
-				return statusMsg{v.label + ": недоступно", true}
+				return statusMsg{v.label + ": unavailable", true}
 			}
 			if err := s.deps.Clipboard(v.val); err != nil {
-				return statusMsg{"буфер обмена: " + err.Error(), true}
+				return statusMsg{"clipboard: " + err.Error(), true}
 			}
-			return statusMsg{"скопировано: " + v.val, false}
+			return statusMsg{"copied: " + v.val, false}
 		}
 	})
 }

@@ -5,21 +5,21 @@ import (
 	"strings"
 )
 
-// node — узел упрощённого дерева HTML: текст (tag == "") или элемент.
+// node is a node of the simplified HTML tree: text (tag == "") or an element.
 type node struct {
 	tag      string
-	text     string // для текстовых узлов — уже с раскодированными сущностями
+	text     string // for text nodes — entities already decoded
 	attrs    map[string]string
 	children []*node
 }
 
 var voidTags = map[string]bool{"br": true, "hr": true, "img": true, "input": true, "meta": true, "link": true, "wbr": true}
 
-// Теги, открытие которых неявно закрывает такой же открытый тег на вершине стека.
+// Tags whose opening implicitly closes the same tag open on top of the stack.
 var autoClose = map[string]bool{"li": true, "p": true, "tr": true, "td": true, "th": true}
 
-// parseHTML разбирает HTML токенайзером в дерево; ошибок не возвращает:
-// неизвестное и «битое» разбирается best effort.
+// parseHTML parses HTML into a tree with a tokenizer; it returns no errors:
+// unknown and malformed input is parsed best effort.
 func parseHTML(s string) *node {
 	root := &node{tag: "#root"}
 	stack := []*node{root}
@@ -78,7 +78,7 @@ func parseHTML(s string) *node {
 	return root
 }
 
-// closeTag снимает со стека всё до ближайшего открытого name; нет такого — игнор.
+// closeTag pops the stack down to the nearest open name; if there is none, it is ignored.
 func closeTag(stack []*node, name string) []*node {
 	for k := len(stack) - 1; k > 0; k-- {
 		if stack[k].tag == name {
@@ -92,7 +92,7 @@ func isAlpha(c byte) bool { return c|0x20 >= 'a' && c|0x20 <= 'z' }
 
 func isSpace(c byte) bool { return c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '\f' }
 
-// parseOpenTag разбирает "<name attr=v ...>" с начала s; size — длина тега.
+// parseOpenTag parses "<name attr=v ...>" at the start of s; size is the tag length.
 func parseOpenTag(s string) (n *node, selfClose bool, size int) {
 	i := 1
 	for i < len(s) && !isSpace(s[i]) && s[i] != '>' && s[i] != '/' {
@@ -151,7 +151,7 @@ func parseAttrValue(s string, i int) (string, int) {
 	return s[k:i], i
 }
 
-// textContent — весь текст поддерева без изменений.
+// textContent is the whole text of the subtree, unchanged.
 func textContent(n *node) string {
 	if n.tag == "" {
 		return n.text

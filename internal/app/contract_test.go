@@ -181,7 +181,7 @@ func TestContractAppStart(t *testing.T) {
 		if err != nil || r.Branch.Created || !r.Branch.Switched || e.git.CurrentV != "PROJ-1-fix-login" {
 			t.Fatalf("%+v %v", r, err)
 		}
-		// группа started: первое состояние группы
+		// started group: the group's first state
 		if e.item("i1").StateID != "s-prog" {
 			t.Fatal("state by group")
 		}
@@ -348,7 +348,7 @@ func TestContractAppCreateQuick(t *testing.T) {
 		in   string
 	}{
 		{"x @ghost", ErrUnknownMember, "ghost"},
-		{"x @bob", ErrUnknownMember, "bob"}, // неоднозначно
+		{"x @bob", ErrUnknownMember, "bob"}, // ambiguous
 		{"x #nolabel", ErrUnknownLabel, "nolabel"},
 	}
 	n := len(e.api.ItemsV["p1"])
@@ -406,7 +406,7 @@ func TestContractAppRefreshItemsCache(t *testing.T) {
 	if _, _, err := e.app.RefreshItems(ctx(), "p1"); err != nil {
 		t.Fatal(err)
 	}
-	// новый процесс: прошлое состояние — из диска
+	// new process: the previous state comes from disk
 	e.now = t0.Add(time.Hour)
 	e.rebuild()
 	its, at, ok := e.app.CachedItems("p1")
@@ -520,7 +520,7 @@ func TestContractAppBulkAndComments(t *testing.T) {
 		t.Fatalf("%v", res)
 	}
 	n := e.calls("UpdateWorkItem")
-	e.app.BulkAssign(ctx(), "p1", e.api.ItemsV["p1"], "u-me", true) // уже назначен — без запросов
+	e.app.BulkAssign(ctx(), "p1", e.api.ItemsV["p1"], "u-me", true) // already assigned: no requests
 	if e.calls("UpdateWorkItem") != n {
 		t.Fatal("no-op expected")
 	}
@@ -562,7 +562,7 @@ func TestContractAppTimer(t *testing.T) {
 	if len(ts) != 2 || ts[0].ItemID != "i42" || !ts[0].Started.Equal(t0) || ts[1].ItemID != "i1" {
 		t.Fatalf("%+v", ts)
 	}
-	e.rebuild() // персистентность через Store
+	e.rebuild() // persistence via Store
 	if got := e.app.Timers(); len(got) != 2 {
 		t.Fatalf("persist: %+v", got)
 	}
@@ -577,7 +577,7 @@ func TestContractAppTimer(t *testing.T) {
 		t.Fatalf("%v %v", d, err)
 	}
 	cm := e.api.CommentsV["i42"]
-	if len(cm) != 1 || !strings.HasPrefix(cm[0].HTML, "<p>Затрачено: 1h 26m</p>") || !strings.Contains(cm[0].HTML, "<li>did it</li>") {
+	if len(cm) != 1 || !strings.HasPrefix(cm[0].HTML, "<p>Time spent: 1h 26m</p>") || !strings.Contains(cm[0].HTML, "<li>did it</li>") {
 		t.Fatalf("%+v", cm)
 	}
 	if len(e.app.Timers()) != 1 {
@@ -599,7 +599,7 @@ func TestContractAppTimer(t *testing.T) {
 			t.Errorf("%v: %q", in, got)
 		}
 	}
-	// без Store — только память
+	// without Store: memory only
 	m := New(Deps{API: e.api, Config: e.cfg, Now: func() time.Time { return t0 }})
 	_ = m.StartTimer("p1", "i1")
 	if len(m.Timers()) != 1 {
@@ -616,7 +616,7 @@ func TestContractAppPrompt(t *testing.T) {
 	_, _ = e.app.Projects(ctx())
 	_, _ = e.app.Meta(ctx(), "p1")
 	_, _, _ = e.app.RefreshItems(ctx(), "p1")
-	e.rebuild() // как новый процесс: только кэш на диске
+	e.rebuild() // like a new process: only the on-disk cache
 	before := len(e.api.Calls)
 	if got := e.app.Prompt(); got != "PROJ-42 Done" {
 		t.Fatalf("%q", got)
@@ -706,7 +706,7 @@ func TestContractAppV2ItemUpdateComments(t *testing.T) {
 	if _, _, err := e.app.RefreshItems(ctx(), "p1"); err != nil {
 		t.Fatal(err)
 	}
-	// Item: замена в памяти и кэше
+	// Item: replacement in memory and cache
 	e.api.ItemsV["p1"][0].Name = "Renamed"
 	it, err := e.app.Item(ctx(), "p1", "i1")
 	if err != nil || it.Name != "Renamed" {
@@ -728,21 +728,21 @@ func TestContractAppV2ItemUpdateComments(t *testing.T) {
 	if its, _, _ = e.app.CachedItems("p1"); its[0].Name != "Again" {
 		t.Fatal("update not in memory")
 	}
-	// без загруженного списка — не падает, кэш не создаётся
+	// without a loaded list: no panic, no cache is created
 	if _, err := e.app.Update(ctx(), "p2", "o7", plane.WorkItemPatch{Name: str("X")}); err != nil {
 		t.Fatal(err)
 	}
 	if _, _, ok := e.app.CachedItems("p2"); ok {
 		t.Fatal("cache created")
 	}
-	// ошибки
+	// errors
 	if _, err := e.app.Item(ctx(), "p1", "nope"); err == nil {
 		t.Fatal("want error")
 	}
 	if _, err := e.app.Update(ctx(), "p1", "nope", plane.WorkItemPatch{}); err == nil {
 		t.Fatal("want error")
 	}
-	// Comments: сортировка
+	// Comments: sorting
 	e.api.CommentsV["i1"] = []plane.Comment{{ID: "b", CreatedAt: t0.Add(time.Hour)}, {ID: "a", CreatedAt: t0}}
 	cs, err := e.app.Comments(ctx(), "p1", "i1")
 	if err != nil || len(cs) != 2 || cs[0].ID != "a" {

@@ -1,4 +1,4 @@
-// Package forgetest — фейк forge.Tool для тестов.
+// Package forgetest provides a fake forge.Tool for tests.
 package forgetest
 
 import (
@@ -7,13 +7,13 @@ import (
 	"github.com/thegriglat/platui/internal/forge"
 )
 
-// Fake записывает запросы и возвращает заданные URL/MR/ошибку.
+// Fake records requests and returns the configured URL/MRs/error.
 type Fake struct {
 	URL   string
 	MRs   []forge.MR
 	Err   error
 	Reqs  []forge.MRRequest
-	Finds [][]string // по вызову: ветки, затем key
+	Finds [][]string // per call: branches, then key
 }
 
 func (f *Fake) CreateMR(_ context.Context, r forge.MRRequest) (string, error) {

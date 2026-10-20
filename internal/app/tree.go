@@ -2,15 +2,15 @@ package app
 
 import "github.com/thegriglat/platui/internal/plane"
 
-// Node — задача в дереве подзадач.
+// Node is a task in the subtask tree.
 type Node struct {
 	Item     plane.WorkItem
 	Children []*Node
 	Depth    int
 }
 
-// Tree строит лес по ParentID внутри items; родитель вне списка — задача
-// корневая; задачи на цикле становятся корнями. Порядок — как во входе.
+// Tree builds a forest by ParentID within items; a parent outside the list makes the task
+// a root; tasks on a cycle become roots. Order is as in the input.
 func Tree(items []plane.WorkItem) []*Node {
 	nodes := make(map[string]*Node, len(items))
 	for _, it := range items {
@@ -35,7 +35,7 @@ func Tree(items []plane.WorkItem) []*Node {
 			}
 			cur = p.Item.ID
 		}
-		return false // цепочка упёрлась в чужой цикл: id — его «хвост», не на цикле
+		return false // the chain ran into someone else's cycle: id is its "tail", not on the cycle
 	}
 	var roots []*Node
 	for _, it := range items {

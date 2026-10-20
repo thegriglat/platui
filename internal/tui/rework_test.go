@@ -49,7 +49,7 @@ func TestStubEmptyAndNilTable(t *testing.T) {
 	newTable = nil
 	m, _, _, _ := newTestModel(t)
 	m.s.setQuery("zzzzqq")
-	if !strings.Contains(view(m), "нет данных") {
+	if !strings.Contains(view(m), "no data") {
 		t.Fatalf("no placeholder:\n%s", view(m))
 	}
 }

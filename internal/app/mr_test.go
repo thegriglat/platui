@@ -49,7 +49,7 @@ func TestContractAppV3(t *testing.T) {
 		if len(e.forge.Finds) != 2 {
 			t.Fatal("fresh ignored")
 		}
-		e.rebuild() // новый процесс: только Store
+		e.rebuild() // new process: Store only
 		if c, ok := e.app.CachedMRs(it.ID); !ok || len(c) != 1 || len(e.forge.Finds) != 2 {
 			t.Fatalf("%v %v", c, ok)
 		}

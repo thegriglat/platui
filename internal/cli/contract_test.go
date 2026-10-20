@@ -184,7 +184,7 @@ func TestContractCLIBranchStartReview(t *testing.T) {
 func TestContractCLIPrompt(t *testing.T) {
 	f := newFx(t)
 	f.git.CurrentV = "PROJ-1-fix-login"
-	f.run("ls") // греет кэш
+	f.run("ls") // warms the cache
 	f.api.Mu.Lock()
 	n := len(f.api.Calls)
 	f.api.Mu.Unlock()
@@ -204,7 +204,7 @@ func TestContractCLIPrompt(t *testing.T) {
 	if c := f.run("prompt"); c != 0 || f.out.Len() != 0 || f.err.Len() != 0 {
 		t.Fatalf("no data: %d %q %q", c, f.out.String(), f.err.String())
 	}
-	f.cfgYA = "workspace: ws\n" // нет ключа
+	f.cfgYA = "workspace: ws\n" // no key
 	if c := f.run("prompt"); c != 0 || f.out.Len() != 0 || f.err.Len() != 0 {
 		t.Fatalf("bad config: %d %q %q", c, f.out.String(), f.err.String())
 	}

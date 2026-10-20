@@ -12,15 +12,15 @@ import (
 )
 
 func init() {
-	registerAction(action{ID: "palette.open", Title: "Палитра команд", Group: "поиск", Keys: []string{"ctrl+p"},
-		Hint: "Ctrl+P|палитра", Scopes: []string{"main", "kanban", "item", "projects"},
+	registerAction(action{ID: "palette.open", Title: "Command palette", Group: "search", Keys: []string{"ctrl+p"},
+		Hint: "Ctrl+P|palette", Scopes: []string{"main", "kanban", "item", "projects"},
 		Run: func(m *model) tea.Cmd { return pushScreen(newPalette(m.s, m.top().Scope())) }})
 }
 
 const paletteMaxQuery = 64
 
-// palEntry — строка палитры; run выполняется в Update палитры (синхронно) и возвращает команду,
-// которая идёт после закрытия палитры.
+// palEntry is a palette row; run is executed in the palette Update (synchronously) and returns a command
+// that runs after the palette closes.
 type palEntry struct {
 	kind, title, keys string
 	score             int
@@ -41,11 +41,11 @@ func newPalette(s *session, under string) *paletteScreen {
 	return p
 }
 
-func (p *paletteScreen) Title() string       { return "палитра" }
+func (p *paletteScreen) Title() string       { return "palette" }
 func (p *paletteScreen) Scope() string       { return "palette" }
 func (p *paletteScreen) CapturesInput() bool { return true }
 
-// keyMsgFor — обратное к keyName: имя клавиши → tea.KeyMsg.
+// keyMsgFor is the inverse of keyName: key name → tea.KeyMsg.
 func keyMsgFor(name string) (tea.KeyMsg, bool) {
 	named := map[string]tea.KeyType{"up": tea.KeyUp, "down": tea.KeyDown, "left": tea.KeyLeft, "right": tea.KeyRight,
 		"esc": tea.KeyEsc, "enter": tea.KeyEnter, "tab": tea.KeyTab, "shift+tab": tea.KeyShiftTab, "pgup": tea.KeyPgUp,
@@ -72,7 +72,7 @@ func keyMsgFor(name string) (tea.KeyMsg, bool) {
 
 var paletteSkip = []string{"palette.open", "app.quit", "nav.move", "nav.tab.n", "nav.focus", "nav.back"}
 
-// baseEntries — все кандидаты без запроса.
+// baseEntries returns all candidates without a query.
 func (p *paletteScreen) baseEntries(s *session) []palEntry {
 	closeThen := func(c tea.Cmd) tea.Cmd { return tea.Sequence(popScreen, c) }
 	var out []palEntry
@@ -93,11 +93,11 @@ func (p *paletteScreen) baseEntries(s *session) []palEntry {
 		km, ok := keyMsgFor(a.Keys[0])
 		title := a.Title
 		if a.Bulk {
-			title += " (отмеченные)"
+			title += " (marked)"
 		}
-		out = append(out, palEntry{kind: "действие", title: title, keys: keysLabel(a.Keys), run: func() tea.Cmd {
+		out = append(out, palEntry{kind: "action", title: title, keys: keysLabel(a.Keys), run: func() tea.Cmd {
 			if !ok {
-				s.setStatus("действие недоступно из палитры", true)
+				s.setStatus("action unavailable from the palette", true)
 				return popScreen
 			}
 			return closeThen(func() tea.Msg { return km })
@@ -105,22 +105,22 @@ func (p *paletteScreen) baseEntries(s *session) []palEntry {
 	}
 	out = append(out, customEntries(s, p.under, closeThen)...)
 	if marked {
-		out = append(out, palEntry{kind: "действие", title: "Снять все отметки", run: func() tea.Cmd {
+		out = append(out, palEntry{kind: "action", title: "Clear all marks", run: func() tea.Cmd {
 			s.marks = map[string]bool{}
 			return popScreen
 		}})
 	}
 	for i, t := range s.tabList() {
-		out = append(out, palEntry{kind: "таб", title: t.label, run: func() tea.Cmd { s.setTab(i); return popScreen }})
+		out = append(out, palEntry{kind: "tab", title: t.label, run: func() tea.Cmd { s.setTab(i); return popScreen }})
 	}
 	if s.filter != 0 {
-		out = append(out, palEntry{kind: "фильтр", title: "Без фильтра", run: func() tea.Cmd { s.filter = 0; return popScreen }})
+		out = append(out, palEntry{kind: "filter", title: "No filter", run: func() tea.Cmd { s.filter = 0; return popScreen }})
 	}
 	for i, f := range s.deps.Config.Filters {
-		out = append(out, palEntry{kind: "фильтр", title: f.Name, run: func() tea.Cmd { s.filter = i + 1; return popScreen }})
+		out = append(out, palEntry{kind: "filter", title: f.Name, run: func() tea.Cmd { s.filter = i + 1; return popScreen }})
 	}
 	for _, pr := range s.projects {
-		out = append(out, palEntry{kind: "проект", title: pr.Identifier + " " + pr.Name, run: func() tea.Cmd {
+		out = append(out, palEntry{kind: "project", title: pr.Identifier + " " + pr.Name, run: func() tea.Cmd {
 			return closeThen(func() tea.Msg { return openProjectMsg{project: pr} })
 		}})
 	}
@@ -130,14 +130,14 @@ func (p *paletteScreen) baseEntries(s *session) []palEntry {
 func (p *paletteScreen) itemEntries(s *session) []palEntry {
 	var out []palEntry
 	for _, it := range s.items {
-		out = append(out, palEntry{kind: "задача", title: itoaKey(s, it.Sequence) + " " + it.Name, run: func() tea.Cmd {
+		out = append(out, palEntry{kind: "task", title: itoaKey(s, it.Sequence) + " " + it.Name, run: func() tea.Cmd {
 			return p.gotoItem(s, it.ID)
 		}})
 	}
 	return out
 }
 
-// gotoItem: курсор на задачу (снимая мешающие фильтры) и открытие карточки.
+// gotoItem: cursor to the task (clearing filters in the way) and open the card.
 func (p *paletteScreen) gotoItem(s *session, id string) tea.Cmd {
 	it, ok := s.itemByID(id)
 	if !ok {
@@ -165,7 +165,7 @@ func (s *session) visibleHas(id string) bool {
 	return false
 }
 
-// keyEntry — переход по ключу PROJ-N / N.
+// keyEntry is the jump by key PROJ-N / N.
 func (p *paletteScreen) keyEntry(s *session) (palEntry, bool) {
 	ident, seq, ok := search.ParseKey(p.query)
 	if !ok {
@@ -178,7 +178,7 @@ func (p *paletteScreen) keyEntry(s *session) (palEntry, bool) {
 		return palEntry{}, false
 	}
 	key := fmt.Sprintf("%s-%d", ident, seq)
-	return palEntry{kind: "переход", title: "Открыть " + key, score: 1 << 20, run: func() tea.Cmd {
+	return palEntry{kind: "jump", title: "Open " + key, score: 1 << 20, run: func() tea.Cmd {
 		if s.project != nil && strings.EqualFold(s.project.Identifier, ident) && s.index != nil {
 			if id, ok := s.index.Lookup(ident, seq); ok {
 				return p.gotoItem(s, id)
@@ -188,7 +188,7 @@ func (p *paletteScreen) keyEntry(s *session) (palEntry, bool) {
 		return tea.Sequence(popScreen, func() tea.Msg {
 			pr, it, err := a.Find(context.Background(), ident, seq)
 			if err != nil {
-				return statusMsg{key + " не найдена", true}
+				return statusMsg{key + " not found", true}
 			}
 			return openProjectMsg{project: pr, itemID: it.ID}
 		})
@@ -265,13 +265,13 @@ func (p *paletteScreen) add(s *session, t string) {
 
 func (p *paletteScreen) View(s *session) string {
 	h := max(s.height-3, 1)
-	head := s.st.accent.Bold(true).Render(" Палитра: ") + p.query + "▏"
+	head := s.st.accent.Bold(true).Render(" Palette: ") + p.query + "▏"
 	from := max(0, min(p.cur-h/2, len(p.entries)-h))
 	var rows []string
 	for i := from; i < len(p.entries) && i < from+h; i++ {
 		e := p.entries[i]
 		title := e.title
-		if len(e.pos) > 0 && e.kind != "переход" {
+		if len(e.pos) > 0 && e.kind != "jump" {
 			title = search.Highlight(e.title, e.pos, func(x string) string { return s.st.accent.Bold(true).Render(x) })
 		}
 		line := " " + s.st.muted.Render(fmt.Sprintf("%-8s", e.kind)) + " " + title
@@ -286,8 +286,8 @@ func (p *paletteScreen) View(s *session) string {
 		rows = append(rows, line)
 	}
 	if len(rows) == 0 {
-		rows = append(rows, s.st.muted.Render(" ничего не найдено"))
+		rows = append(rows, s.st.muted.Render(" nothing found"))
 	}
-	foot := s.st.muted.Render(" ↑↓ выбор   Enter выполнить   Esc закрыть")
+	foot := s.st.muted.Render(" ↑↓ select   Enter run   Esc close")
 	return head + "\n" + strings.Join(rows, "\n") + "\n" + foot
 }

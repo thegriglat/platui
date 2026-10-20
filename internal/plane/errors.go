@@ -5,25 +5,25 @@ import (
 	"fmt"
 )
 
-// Сентинелы для errors.Is.
+// Sentinels for errors.Is.
 var (
 	ErrUnauthorized = errors.New("plane: unauthorized")
 	ErrNotFound     = errors.New("plane: not found")
 	ErrRateLimited  = errors.New("plane: rate limited")
 )
 
-// APIError — ошибка ответа API.
+// APIError is an API response error.
 type APIError struct {
 	Status  int
 	Message string
 }
 
-// Error реализует error.
+// Error implements error.
 func (e *APIError) Error() string {
 	return fmt.Sprintf("plane: HTTP %d: %s", e.Status, e.Message)
 }
 
-// Is связывает статусы с сентинелами для errors.Is.
+// Is maps statuses to sentinels for errors.Is.
 func (e *APIError) Is(target error) bool {
 	switch target {
 	case ErrUnauthorized:

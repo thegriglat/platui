@@ -4,7 +4,7 @@ import (
 	"fmt"
 )
 
-// WebURL — ссылка на задачу в веб-интерфейсе.
+// WebURL is the link to a task in the web interface.
 func (c *Client) WebURL(p Project, it WorkItem) string {
 	base := c.web
 	if base == "" {

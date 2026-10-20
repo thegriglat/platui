@@ -1,96 +1,96 @@
-# platui — полный пример конфига. Путь: ~/.config/platui/config.yml
-# (или $XDG_CONFIG_HOME/platui/config.yml, или --config <путь>).
-# Неизвестные ключи — ошибка. Показаны значения по умолчанию, если не сказано иное.
+# platui — full example config. Path: ~/.config/platui/config.yml
+# (or $XDG_CONFIG_HOME/platui/config.yml, or --config <path>).
+# Unknown keys are an error. Defaults are shown unless stated otherwise.
 
-# --- Подключение к Plane ---
-base_url: https://api.plane.so   # для self-hosted — URL вашего экземпляра; завершающий «/» срезается
-api_key_env: PLANE_API_KEY       # имя переменной окружения с ключом API
-# api_key: plane_api_xxx         # ИЛИ ключ прямо в файле; задавать можно только одно из двух
-workspace: my-team               # slug workspace из URL Plane (обязательно; workspace один)
-default_project: PROJ            # identifier проекта, открываемого при старте (необязательно)
-web_url: ""                      # базовый URL веб-интерфейса; пусто — выводится из base_url
+# --- Plane connection ---
+base_url: https://api.plane.so   # for self-hosted, your instance URL; a trailing "/" is trimmed
+api_key: plane_api_xxx           # Plane API key (Profile settings → Personal Access Tokens); keep this file private (chmod 600)
+# api_key_env: PLANE_API_KEY     # OR the name of an environment variable holding the key; set only one of the two
+workspace: my-team               # workspace slug from the Plane URL (required; a single workspace)
+default_project: PROJ            # identifier of the project opened at start (optional)
+web_url: ""                      # base URL of the web UI; empty: derived from base_url
 
-# --- Ветки git ---
+# --- Git branches ---
 branch:
-  template: "{identifier}-{sequence}-{slug}"      # плейсхолдеры: {identifier} {sequence} {slug}
-  base: ""                                        # от какой ветки создавать; пусто — от текущего HEAD
-  checkout: true                                  # переключаться на созданную ветку
-  worktree: false                                 # true — создавать ветку в отдельном git worktree
-  worktree_dir: "../{repo}-{branch}"              # плейсхолдеры: {repo} {branch}; относительный путь — от корня репозитория
-  commit_template: "{identifier}-{sequence}: {title}"  # плейсхолдеры: {identifier} {sequence} {title} {slug}
+  template: "{identifier}-{sequence}-{slug}"      # placeholders: {identifier} {sequence} {slug}
+  base: ""                                        # branch to create from; empty: current HEAD
+  checkout: true                                  # switch to the created branch
+  worktree: false                                 # true: create the branch in a separate git worktree
+  worktree_dir: "../{repo}-{branch}"              # placeholders: {repo} {branch}; a relative path is from the repository root
+  commit_template: "{identifier}-{sequence}: {title}"  # placeholders: {identifier} {sequence} {title} {slug}
   remote: origin
 
-# --- Сценарии «старт работы» и «готово к ревью» ---
+# --- "Start work" and "ready for review" scenarios ---
 workflow:
-  start_state: ""                # имя состояния для старта; пусто — первое состояние группы started
-  review_state: ""               # пусто — состояние «In Review» (без учёта регистра); нет такого — не менять
+  start_state: ""                # state name to start in; empty: first state of the started group
+  review_state: ""               # empty: the "In Review" state (case-insensitive); if absent, leave the state unchanged
 
-# --- Merge request в GitLab (через glab) ---
+# --- GitLab merge request (via glab) ---
 gitlab:
-  host: ""                       # имя[:порт] без схемы; пусто — host из URL remote
-  repo: ""                       # group/project; пусто — из URL remote
-  target_branch: ""              # цель MR; пусто — ветка по умолчанию проекта
-  draft: false                   # создавать MR как черновик
-  glab: glab                     # имя или путь бинаря glab
-  mr_cache: 10m                  # сколько помнить найденные MR задачи («Go to MR»); 0 — не кэшировать
+  host: ""                       # name[:port] without scheme; empty: host from the remote URL
+  repo: ""                       # group/project; empty: from the remote URL
+  target_branch: ""              # MR target; empty: the project's default branch
+  draft: false                   # create the MR as a draft
+  glab: glab                     # name or path of the glab binary
+  mr_cache: 10m                  # how long to remember MRs found for a task ("Go to MR"); 0: no caching
 
-# --- Табы по состояниям ---
+# --- Tabs by state ---
 tabs:
-  states: []                     # имена состояний в порядке табов; пусто — все состояния проекта,
-                                 # кроме групп из hide_groups (по группе, затем по sequence)
-  hide_groups: [cancelled]       # из backlog|unstarted|started|completed|cancelled; действует при пустом states; [] — не скрывать
-  all: true                      # первый таб «Все»
+  states: []                     # state names in tab order; empty: all project states,
+                                 # except groups in hide_groups (by group, then by sequence)
+  hide_groups: [cancelled]       # from backlog|unstarted|started|completed|cancelled; applies when states is empty; []: hide nothing
+  all: true                      # first tab "All"
 
-# --- Сохранённые фильтры (не более 9; меню F и палитра команд) ---
-# Непустые критерии объединяются через И, значения внутри списка — через ИЛИ.
+# --- Saved filters (at most 9; the F menu and the command palette) ---
+# Non-empty criteria are combined with AND, values within a list with OR.
 filters:
-  - name: Мои в работе           # обязательно
-    project: ""                  # identifier; пусто — текущий проект
-    mine: true                   # исполнитель — я
-    state_groups: [started]      # из backlog|unstarted|started|completed|cancelled
-    states: []                   # имена состояний (без учёта регистра)
-    priorities: [urgent, high]   # из urgent|high|medium|low|none
-    labels: []                   # имена меток (без учёта регистра)
-    text: ""                     # подстрока в названии (без учёта регистра)
+  - name: My in progress           # required
+    project: ""                  # identifier; empty: current project
+    mine: true                   # assignee is me
+    state_groups: [started]      # from backlog|unstarted|started|completed|cancelled
+    states: []                   # state names (case-insensitive)
+    priorities: [urgent, high]   # from urgent|high|medium|low|none
+    labels: []                   # label names (case-insensitive)
+    text: ""                     # substring of the title (case-insensitive)
 
-# --- Оформление ---
+# --- Appearance ---
 theme:
-  no_color: false                # true (или непустая NO_COLOR) — без цветов
-  colors:                        # необязательно; "#RRGGBB" или "0".."255" (ANSI 256)
-    accent: "#7D56F4"            # ключи: accent muted text error success warning selection border
+  no_color: false                # true (or a non-empty NO_COLOR): no colors
+  colors:                        # optional; "#RRGGBB" or "0".."255" (ANSI 256)
+    accent: "#7D56F4"            # keys: accent muted text error success warning selection border
                                  #        priority_urgent priority_high priority_medium priority_low
 
-# --- Прочее ---
-editor: ""                       # пусто → $VISUAL → $EDITOR → vi
+# --- Misc ---
+editor: ""                       # empty → $VISUAL → $EDITOR → vi
 
 refresh:
-  interval: 2m                   # фоновое обновление; 0 — выключено, иначе не меньше 30s (лимит API 60 запросов/мин)
-  notify: true                   # подсветка и звонок о новых/изменённых задачах
+  interval: 2m                   # background refresh; 0: off, otherwise at least 30s (API limit is 60 requests/min)
+  notify: true                   # highlight and bell on new/changed tasks
 
 cache:
-  enabled: true                  # кэш на диске для быстрого старта
-  dir: ""                        # пусто → $XDG_CACHE_HOME/platui, иначе ~/.cache/platui
+  enabled: true                  # on-disk cache for a fast start
+  dir: ""                        # empty → $XDG_CACHE_HOME/platui, else ~/.cache/platui
 
-# --- Интерфейс ---
+# --- Interface ---
 ui:
-  mouse: true                    # поддержка мыши
-  preview_width: 45              # ширина превью, %: 20..80
+  mouse: true                    # mouse support
+  preview_width: 45              # preview width, %: 20..80
 
-# --- Личный todo ---
+# --- Personal todo ---
 todo:
-  path: ""                       # пусто → $XDG_DATA_HOME/platui/todo.md, иначе ~/.local/share/platui/todo.md
+  path: ""                       # empty → $XDG_DATA_HOME/platui/todo.md, else ~/.local/share/platui/todo.md
 
-# --- Свои команды (клавиша; плейсхолдеры подставляются уже в кавычках — самому кавычки не ставить) ---
-# Плейсхолдеры: {id} {key} {branch} {url} {title} {mr_url}
+# --- Custom commands (key; placeholders are substituted already quoted: do not add quotes yourself) ---
+# Placeholders: {id} {key} {branch} {url} {title} {mr_url}
 commands:
-  - name: Открыть ветку в редакторе
-    key: ""                      # необязательно; не должна совпадать со встроенной клавишей
+  - name: Open branch in editor
+    key: ""                      # optional; must not clash with a built-in key
     command: code -- {branch}
-    confirm: false               # спрашивать подтверждение
+    confirm: false               # ask for confirmation
     output: status               # status | window | none
 
-# --- HTTP к Plane ---
+# --- HTTP to Plane ---
 # http:
 #   timeout: 30s
 #   retries: 3
-#   ca_file: ~/certs/my-ca.crt   # PEM с доверенными CA (один или несколько) — добавляются к системным, для self-hosted с собственным CA
+#   ca_file: ~/certs/my-ca.crt   # PEM with trusted CAs (one or more), added to the system ones; for self-hosted with its own CA

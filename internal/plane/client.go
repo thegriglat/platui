@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// Client реализует API.
+// Client implements API.
 type Client struct {
 	base, key, ws, web string
 	hc                 *http.Client
@@ -15,8 +15,8 @@ type Client struct {
 	sleep              func(time.Duration)
 }
 
-// Options — параметры клиента.
-// MaxRetries: <0 — без повторов, 0 — 3 повтора по умолчанию.
+// Options are the client parameters.
+// MaxRetries: <0 means no retries, 0 means the default of 3 retries.
 type Options struct {
 	BaseURL, APIKey, Workspace, WebURL string
 	HTTPClient                         *http.Client
@@ -26,7 +26,7 @@ type Options struct {
 
 var _ API = (*Client)(nil)
 
-// New создаёт клиент.
+// New creates a client.
 func New(o Options) *Client {
 	c := &Client{
 		base: strings.TrimRight(o.BaseURL, "/"), key: o.APIKey, ws: o.Workspace,
@@ -44,7 +44,7 @@ func New(o Options) *Client {
 	return c
 }
 
-// root — URL вне workspace: <base_url>/api/v1/…/.
+// root is a URL outside the workspace: <base_url>/api/v1/…/.
 func (c *Client) root(parts ...string) string {
 	p := c.base + "/api/v1/"
 	for _, s := range parts {
@@ -53,7 +53,7 @@ func (c *Client) root(parts ...string) string {
 	return p
 }
 
-// path — URL под workspace.
+// path is a URL under the workspace.
 func (c *Client) path(parts ...string) string {
 	p := c.base + "/api/v1/workspaces/" + url.PathEscape(c.ws) + "/"
 	for _, s := range parts {

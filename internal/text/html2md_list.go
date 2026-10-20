@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// renderList переводит ul/ol (с вложенностью) в Markdown.
+// renderList converts ul/ol (with nesting) to Markdown.
 func renderList(n *node) string {
 	start := 1
 	if v, err := strconv.Atoi(n.attrs["start"]); err == nil && n.tag == "ol" {

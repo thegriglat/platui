@@ -35,13 +35,13 @@ func gitItem(p plane.Project, it plane.WorkItem) gitbranch.Item {
 	return gitbranch.Item{Identifier: p.Identifier, Sequence: it.Sequence, Title: it.Name}
 }
 
-// BranchName — имя ветки задачи по шаблону.
+// BranchName returns the task branch name from the template.
 func (a *App) BranchName(p plane.Project, it plane.WorkItem) (string, error) {
 	return gitbranch.Render(a.branchTemplate(), gitItem(p, it))
 }
 
-// BranchStatuses — статусы веток задач (ключ — ID задачи): ветка по шаблону
-// и локальные ветки с тем же ID задачи. Задачи без веток пропускаются.
+// BranchStatuses returns task branch statuses (key is the task ID): the template branch
+// and local branches with the same task ID. Tasks without branches are skipped.
 func (a *App) BranchStatuses(p plane.Project, items []plane.WorkItem) (map[string]gitbranch.BranchStatus, error) {
 	g, err := a.git()
 	if err != nil {
@@ -57,7 +57,7 @@ func (a *App) BranchStatuses(p plane.Project, items []plane.WorkItem) (map[strin
 			bySeq[ref.Sequence] = append(bySeq[ref.Sequence], b)
 		}
 	}
-	cands := make(map[string][]string, len(items)) // ID задачи → ветки, шаблонная первой
+	cands := make(map[string][]string, len(items)) // task ID → branches, template branch first
 	var names []string
 	for _, it := range items {
 		var c []string
@@ -89,13 +89,13 @@ func (a *App) BranchStatuses(p plane.Project, items []plane.WorkItem) (map[strin
 	return res, nil
 }
 
-// Stale — локальная ветка задачи, которую можно убрать.
+// Stale is a local task branch that can be removed.
 type Stale struct {
 	Branch string
 	Item   plane.WorkItem
 }
 
-// StaleBranches — ветки задач проекта в группах completed|cancelled, кроме текущей.
+// StaleBranches returns branches of the project's tasks in completed|cancelled groups, except the current one.
 func (a *App) StaleBranches(ctx context.Context, p plane.Project) ([]Stale, error) {
 	g, err := a.git()
 	if err != nil {
@@ -139,7 +139,7 @@ func (a *App) StaleBranches(ctx context.Context, p plane.Project) ([]Stale, erro
 	return out, nil
 }
 
-// DeleteBranches удаляет ветки; результат — ошибка по имени.
+// DeleteBranches deletes branches; the result is an error per name.
 func (a *App) DeleteBranches(names []string, force bool) map[string]error {
 	res := make(map[string]error, len(names))
 	g, err := a.git()
@@ -153,10 +153,10 @@ func (a *App) DeleteBranches(names []string, force bool) map[string]error {
 	return res
 }
 
-// CopyItems — строки для буфера обмена.
+// CopyItems holds the lines for the clipboard.
 type CopyItems struct{ ID, URL, Title, Branch, Markdown string }
 
-// CopyItems готовит значения для копирования.
+// CopyItems prepares the values to copy.
 func (a *App) CopyItems(p plane.Project, it plane.WorkItem) CopyItems {
 	id := p.Identifier + "-" + itoa(it.Sequence)
 	url := a.d.API.WebURL(p, it)
@@ -164,8 +164,8 @@ func (a *App) CopyItems(p plane.Project, it plane.WorkItem) CopyItems {
 	return CopyItems{ID: id, URL: url, Title: it.Name, Branch: br, Markdown: "[" + id + "](" + url + ")"}
 }
 
-// templateName строит имя по шаблону без запуска git (без ValidName):
-// недопустимое имя просто не найдётся среди веток.
+// templateName builds the name from the template without running git (no ValidName):
+// an invalid name simply won't be found among the branches.
 func (a *App) templateName(p plane.Project, it plane.WorkItem) string {
 	return strings.NewReplacer(
 		"{identifier}", p.Identifier,

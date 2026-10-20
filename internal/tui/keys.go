@@ -6,7 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// keyName — нормализованное имя клавиши (tea.KeyMsg.String(); пробел — "space").
+// keyName is the normalized key name (tea.KeyMsg.String(); space is "space").
 func keyName(m tea.KeyMsg) string {
 	if s := m.String(); s != " " {
 		return s
@@ -19,7 +19,7 @@ var keyLabels = map[string]string{
 	"enter": "Enter", "esc": "Esc", "tab": "Tab", "home": "Home", "end": "End", "space": "Space",
 }
 
-// keyLabel — подпись клавиши для справки: "ctrl+left" → "Ctrl+←".
+// keyLabel is the key label for help: "ctrl+left" → "Ctrl+←".
 func keyLabel(k string) string {
 	parts := strings.Split(k, "+")
 	for i, p := range parts {
@@ -35,7 +35,7 @@ func keyLabel(k string) string {
 	return strings.Join(parts, "+")
 }
 
-// keysLabel — подпись набора клавиш; alt+1…alt+9 сворачиваются в «Alt+1…9».
+// keysLabel is the label of a key set; alt+1…alt+9 collapse into "Alt+1…9".
 func keysLabel(keys []string) string {
 	var out []string
 	digits := 0

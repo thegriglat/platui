@@ -1,21 +1,21 @@
-// Package search реализует мгновенный нечёткий поиск по заголовкам задач
-// (контракт C9 v4). Пакет листовой: документы собирает вызывающий код.
-// Сопоставление — алгоритм fzf (github.com/junegunn/fzf/src/algo), свой не пишем.
+// Package search implements instant fuzzy search over issue titles
+// (contract C9 v4). A leaf package: the caller assembles the documents.
+// Matching uses the fzf algorithm (github.com/junegunn/fzf/src/algo); we do not write our own.
 package search
 
-// MaxQuery — максимальная длина запроса в рунах; Search и ParseKey обрезают запрос.
+// MaxQuery is the maximum query length in runes; Search and ParseKey truncate the query.
 const MaxQuery = 32
 
-// Doc — документ для индексации.
+// Doc is a document to index.
 type Doc struct {
-	ID    string // ID задачи (UUID)
+	ID    string // issue ID (UUID)
 	Key   string // "PROJ-42"
 	Title string
 }
 
-// Hit — найденный документ.
+// Hit is a matched document.
 type Hit struct {
 	ID    string
 	Score int
-	Pos   []int // позиции совпавших рун в Title, по возрастанию, без повторов
+	Pos   []int // positions of matched runes in Title, ascending, no duplicates
 }

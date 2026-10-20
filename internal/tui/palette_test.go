@@ -11,7 +11,7 @@ import (
 	"github.com/thegriglat/platui/internal/config"
 )
 
-// drive подаёт сообщение и выполняет команды, включая tea.Sequence (по порядку).
+// drive feeds a message and runs the commands, including tea.Sequence (in order).
 func drive(t *testing.T, m *model, msg tea.Msg) {
 	t.Helper()
 	_, cmd := m.Update(msg)
@@ -62,82 +62,82 @@ func TestContractTUIPalette(t *testing.T) {
 	m, e := newTestModelCfg(t, StartAt{Project: "PROJ"}, nil)
 	pressD(t, m, "ctrl+p")
 	typeD(t, m, "OTH-7")
-	if !strings.Contains(view(m), "Открыть OTH-7") {
-		t.Fatalf("нет перехода:\n%s", view(m))
+	if !strings.Contains(view(m), "Open OTH-7") {
+		t.Fatalf("no jump:\n%s", view(m))
 	}
 	pressD(t, m, "enter")
 	if m.s.project.Identifier != "OTH" || e.count("WorkItems:p2") == 0 && countCalls(e, "ByKey") == 0 {
-		t.Fatalf("переход по ключу: %v %v", m.s.project, e.api.Calls)
+		t.Fatalf("jump by key: %v %v", m.s.project, e.api.Calls)
 	}
 	m, e = newTestModelCfg(t, StartAt{Project: "PROJ"}, func(c *config.Config) {
-		c.Filters = []config.Filter{{Name: "Срочные", Priorities: []string{"urgent"}}}
+		c.Filters = []config.Filter{{Name: "Urgent", Priorities: []string{"urgent"}}}
 	})
-	// открытие и действие из палитры
+	// open and an action from the palette
 	pressD(t, m, "ctrl+p")
 	if m.top().Scope() != "palette" {
-		t.Fatalf("палитра не открылась")
+		t.Fatalf("palette did not open")
 	}
-	if !strings.Contains(view(m), "Палитра") || !strings.Contains(view(m), "Только мои") {
-		t.Fatalf("нет действий в палитре:\n%s", view(m))
+	if !strings.Contains(view(m), "Palette") || !strings.Contains(view(m), "My tasks only") {
+		t.Fatalf("no actions in the palette:\n%s", view(m))
 	}
-	typeD(t, m, "мои")
+	typeD(t, m, "my tasks")
 	pressD(t, m, "enter")
 	if m.top().Scope() != "main" || !m.s.mine {
-		t.Fatalf("действие «мои» не выполнено: scope=%s mine=%v", m.top().Scope(), m.s.mine)
+		t.Fatalf("mine action not executed: scope=%s mine=%v", m.top().Scope(), m.s.mine)
 	}
 	pressD(t, m, "m")
-	// таб
+	// tab
 	pressD(t, m, "ctrl+p")
 	typeD(t, m, "progress")
 	pressD(t, m, "enter")
 	if tl := m.s.tabList(); tl[m.s.tab].label != "In Progress" {
-		t.Fatalf("таб: %s", tl[m.s.tab].label)
+		t.Fatalf("tab: %s", tl[m.s.tab].label)
 	}
-	// фильтр
+	// filter
 	pressD(t, m, "ctrl+p")
-	typeD(t, m, "Срочн")
+	typeD(t, m, "Urgen")
 	pressD(t, m, "enter")
 	if m.s.filter != 1 {
-		t.Fatalf("фильтр не выбран: %d", m.s.filter)
+		t.Fatalf("filter not selected: %d", m.s.filter)
 	}
 	m.s.filter = 0
-	// проект
+	// project
 	pressD(t, m, "ctrl+p")
 	typeD(t, m, "OTH Two")
 	pressD(t, m, "enter")
 	if m.s.project == nil || m.s.project.Identifier != "OTH" {
-		t.Fatalf("проект не переключён: %+v", m.s.project)
+		t.Fatalf("project not switched: %+v", m.s.project)
 	}
 	pressD(t, m, "ctrl+p")
 	typeD(t, m, "PROJ One")
 	pressD(t, m, "enter")
 	if m.s.project.Identifier != "PROJ" {
-		t.Fatalf("проект назад")
+		t.Fatalf("project back")
 	}
-	// задача
+	// task
 	pressD(t, m, "ctrl+p")
 	typeD(t, m, "login")
 	if !strings.Contains(view(m), "Fix login page") {
-		t.Fatalf("задача не найдена:\n%s", view(m))
+		t.Fatalf("task not found:\n%s", view(m))
 	}
 	pressD(t, m, "enter")
 	if m.s.cursor != "i5" {
-		t.Fatalf("курсор: %s", m.s.cursor)
+		t.Fatalf("cursor: %s", m.s.cursor)
 	}
-	if m.top().Scope() == "item" { // выбор задачи открывает карточку (PT-5c)
+	if m.top().Scope() == "item" { // choosing a task opens the card (PT-5c)
 		pressD(t, m, "esc")
 	}
-	// не найдена
+	// not found
 	pressD(t, m, "ctrl+p")
 	typeD(t, m, "OTH-999")
 	pressD(t, m, "enter")
-	if !strings.Contains(m.s.status.text, "не найдена") {
-		t.Fatalf("статус: %q", m.s.status.text)
+	if !strings.Contains(m.s.status.text, "not found") {
+		t.Fatalf("status: %q", m.s.status.text)
 	}
-	// Esc закрывает
+	// Esc closes
 	pressD(t, m, "ctrl+p", "esc")
 	if m.top().Scope() != "main" {
-		t.Fatalf("Esc не закрыл палитру")
+		t.Fatalf("Esc did not close the palette")
 	}
 }
 

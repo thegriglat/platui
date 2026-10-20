@@ -32,7 +32,7 @@ func convState(r json.RawMessage) (State, error) {
 	return st, nil
 }
 
-// WorkItemByKey — метод API: задача по PROJ-N.
+// WorkItemByKey is an API method: a task by PROJ-N.
 func (c *Client) WorkItemByKey(ctx context.Context, identifier string, seq int) (WorkItem, error) {
 	key := strings.ToUpper(identifier) + "-" + strconv.Itoa(seq)
 	data, err := c.do(ctx, http.MethodGet, c.path("work-items", key), nil, nil)
@@ -46,7 +46,7 @@ func (c *Client) WorkItemByKey(ctx context.Context, identifier string, seq int) 
 	return it, nil
 }
 
-// Search — метод API: серверный поиск, limit<=0 → 50.
+// Search is an API method: server-side search, limit<=0 → 50.
 func (c *Client) Search(ctx context.Context, query, projectID string, limit int) ([]SearchHit, error) {
 	if limit <= 0 {
 		limit = 50

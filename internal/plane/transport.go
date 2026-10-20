@@ -14,10 +14,10 @@ import (
 	"time"
 )
 
-// maxWait — верхняя граница ожидания по заголовкам.
+// maxWait is the upper bound of the wait taken from headers.
 const maxWait = 60 * time.Second
 
-// retryDelay — ожидание перед повтором: Retry-After, X-RateLimit-Reset, иначе 1s, 2s, 4s.
+// retryDelay is the wait before a retry: Retry-After, X-RateLimit-Reset, otherwise 1s, 2s, 4s.
 func retryDelay(resp *http.Response, attempt int) time.Duration {
 	if v := strings.TrimSpace(resp.Header.Get("Retry-After")); v != "" {
 		if n, err := strconv.ParseFloat(v, 64); err == nil && n >= 0 {
@@ -39,7 +39,7 @@ func retryDelay(resp *http.Response, attempt int) time.Duration {
 	return time.Second << uint(attempt)
 }
 
-// errorMessage — текст ошибки из тела (detail, error, message) или статуса.
+// errorMessage is the error text from the body (detail, error, message) or the status.
 func errorMessage(body []byte, status int) string {
 	var m map[string]any
 	if json.Unmarshal(body, &m) == nil {
@@ -56,7 +56,7 @@ func errorMessage(body []byte, status int) string {
 	return t
 }
 
-// sleepCtx ждёт d, прерываясь по ctx.
+// sleepCtx waits for d, interrupted by ctx.
 func (c *Client) sleepCtx(ctx context.Context, d time.Duration) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -71,7 +71,7 @@ func (c *Client) sleepCtx(ctx context.Context, d time.Duration) error {
 	}
 }
 
-// do выполняет запрос с повторами 429/503 и возвращает тело 2xx.
+// do performs a request with 429/503 retries and returns the 2xx body.
 func (c *Client) do(ctx context.Context, method, u string, q url.Values, body any) ([]byte, error) {
 	if len(q) > 0 {
 		u += "?" + q.Encode()
@@ -105,7 +105,7 @@ func (c *Client) do(ctx context.Context, method, u string, q url.Values, body an
 			}
 			var ue *url.Error
 			if errors.As(err, &ue) {
-				err = ue.Err // URL без query; ключ в URL не передаётся
+				err = ue.Err // URL without query; the key is not passed in the URL
 			}
 			return nil, fmt.Errorf("plane: %s request failed: %w", method, err)
 		}
@@ -128,7 +128,7 @@ func (c *Client) do(ctx context.Context, method, u string, q url.Values, body an
 	}
 }
 
-// redact вырезает ключ клиента из текста, пришедшего от сервера.
+// redact strips the client key from text received from the server.
 func (c *Client) redact(s string) string {
 	if c.key == "" {
 		return s

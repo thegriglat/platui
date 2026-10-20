@@ -18,7 +18,7 @@ func TestContractAppV5StartKeepsCommitMsg(t *testing.T) {
 		}
 		found := false
 		for _, w := range r.Warnings {
-			found = found || strings.Contains(w, "уже есть — не перезаписано")
+			found = found || strings.Contains(w, "already exists — not overwritten")
 		}
 		if !found {
 			t.Fatalf("no warning: %v", r.Warnings)

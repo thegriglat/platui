@@ -13,13 +13,13 @@ func TestContractTUIV6Links(t *testing.T) {
 	m, api, _, _ := newTestModel(t)
 	var opened []string
 	m.s.deps.OpenURL = func(u string) error { opened = append(opened, u); return nil }
-	// нет ссылок
+	// no links
 	m.s.cursor = "i4"
 	press(t, m, "l")
-	if m.s.status.text != "ссылок нет" || m.top().Scope() != "main" {
+	if m.s.status.text != "no links" || m.top().Scope() != "main" {
 		t.Fatalf("status=%q scope=%s", m.s.status.text, m.top().Scope())
 	}
-	// ссылки из описания и комментариев, без дублей
+	// links from description and comments, without duplicates
 	it := api.ItemsV["p1"][0]
 	it.DescHTML = `<p><a href="https://a.example/1">x</a> https://b.example/2</p>`
 	api.ItemsV["p1"][0] = it
@@ -40,11 +40,11 @@ func TestContractTUIV6Links(t *testing.T) {
 		t.Fatalf("opened=%v links=%v", opened, ls.links)
 	}
 	if !strings.Contains(view(m), "https://c.example/3") {
-		t.Error("нет ссылки в экране")
+		t.Error("link missing on screen")
 	}
 	press(t, m, "esc")
 	if m.top().Scope() != "main" {
-		t.Fatal("Esc не закрыл")
+		t.Fatal("Esc did not close")
 	}
 }
 
@@ -65,17 +65,17 @@ func TestContractTUIV6History(t *testing.T) {
 	}
 	ctrlO(t, m)
 	if m.s.openItem != "i2" || m.top().Scope() != "item" {
-		t.Fatalf("после Ctrl+O: %s", m.s.openItem)
+		t.Fatalf("after Ctrl+O: %s", m.s.openItem)
 	}
 	ctrlO(t, m)
 	if m.s.openItem != "i1" {
-		t.Fatalf("второй Ctrl+O: %s", m.s.openItem)
+		t.Fatalf("second Ctrl+O: %s", m.s.openItem)
 	}
 	ctrlO(t, m)
-	if m.s.openItem != "i1" || !strings.Contains(m.s.status.text, "история пуста") {
-		t.Fatalf("пустая история: %s %q", m.s.openItem, m.s.status.text)
+	if m.s.openItem != "i1" || !strings.Contains(m.s.status.text, "history is empty") {
+		t.Fatalf("empty history: %s %q", m.s.openItem, m.s.status.text)
 	}
-	// ограничение 50
+	// limit of 50
 	h := &history{}
 	for i := 0; i < 80; i++ {
 		h.visit(itoa(i))
@@ -96,22 +96,22 @@ func TestContractTUIV6Dupes(t *testing.T) {
 		t.Fatalf("sim=%v", c.sim)
 	}
 	if !strings.Contains(view(m), "Fix login page") {
-		t.Error("похожие не показаны")
+		t.Error("similar not shown")
 	}
-	// Enter по-прежнему создаёт
+	// Enter still creates
 	n := len(api.ItemsV["p1"])
 	press(t, m, "enter")
 	if len(api.ItemsV["p1"]) != n+1 {
-		t.Fatal("не создана")
+		t.Fatal("not created")
 	}
-	// ↓ + Enter открывает похожую вместо создания
+	// ↓ + Enter opens the similar one instead of creating
 	press(t, m, "n")
 	for _, r := range "Task number" {
 		press(t, m, string(r))
 	}
 	c = m.top().(*inputScreen)
 	if len(c.sim) != 5 {
-		t.Fatalf("sim=%d (ожидалось ≤5)", len(c.sim))
+		t.Fatalf("sim=%d (expected ≤5)", len(c.sim))
 	}
 	gpress(t, m, "down", "enter")
 	if m.top().Scope() != "item" || len(api.ItemsV["p1"]) != n+1 {

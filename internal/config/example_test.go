@@ -8,7 +8,6 @@ import (
 )
 
 func TestContractConfigExample(t *testing.T) {
-	t.Setenv("PLANE_API_KEY", "k")
 	data, err := os.ReadFile(filepath.Join("..", "..", "config.example.yml"))
 	if err != nil {
 		t.Fatal(err)
@@ -17,7 +16,7 @@ func TestContractConfigExample(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if c.Workspace != "my-team" || c.Key() != "k" || c.Branch.Template != DefaultBranchTemplate ||
+	if c.Workspace != "my-team" || c.Key() != "plane_api_xxx" || c.Branch.Template != DefaultBranchTemplate ||
 		c.GitLab.Glab != "glab" || *c.GitLab.MRCache != 10*time.Minute ||
 		*c.Refresh.Interval != DefaultRefresh || len(c.Filters) != 1 || !c.TabsAll() {
 		t.Fatalf("unexpected: %+v", c)

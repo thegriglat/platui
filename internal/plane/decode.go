@@ -5,9 +5,9 @@ import (
 	"time"
 )
 
-// ---- разбор ----
+// ---- parsing ----
 
-// idOf берёт строку-UUID или поле id объекта.
+// idOf takes a UUID string or the object's id field.
 func idOf(r json.RawMessage) string {
 	var s string
 	if json.Unmarshal(r, &s) == nil {

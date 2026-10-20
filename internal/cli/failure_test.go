@@ -19,8 +19,8 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// Аудит PT-45: недоступность API Plane в CLI. Тесты GAP проверяют ожидаемое
-// («как надо») и пропускаются, пока поведение не исправлено.
+// Audit PT-45: Plane API unavailability in the CLI. GAP tests check the expected
+// ("as it should be") behavior and are skipped until it is fixed.
 
 const flKey = "plane_api_secret"
 
@@ -36,7 +36,7 @@ type flResult struct {
 	out, errOut string
 }
 
-// flRunReal запускает platui с настоящим plane.Client против base.
+// flRunReal runs platui with a real plane.Client against base.
 func flRunReal(t *testing.T, ctx context.Context, base string, timeout time.Duration, args ...string) flResult {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "config.yml")
@@ -69,7 +69,7 @@ func flClosedURL() string {
 	return u
 }
 
-// flOK отдаёт образцовый проект; page2 — реакция на вторую страницу задач.
+// flOK serves a sample project; page2 handles the second page of issues.
 func flOK(page2 func(http.ResponseWriter)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		p := r.URL.Path
@@ -113,7 +113,7 @@ func TestFailureCLIFakeErrors(t *testing.T) {
 			f.api.Err[tc.method] = tc.err
 			code := f.run(tc.args...)
 			if code != tc.code || f.out.Len() != 0 || !strings.HasPrefix(f.err.String(), "platui: ") || strings.Count(f.err.String(), "\n") != 1 {
-				t.Fatalf("код %d, stdout %q, stderr %q", code, f.out.String(), f.err.String())
+				t.Fatalf("code %d, stdout %q, stderr %q", code, f.out.String(), f.err.String())
 			}
 		})
 	}
@@ -126,7 +126,7 @@ func TestFailureCLIShowNotFound(t *testing.T) {
 	f.api.Err["WorkItemByKey"] = &plane.APIError{Status: 404, Message: "not found"}
 	code := f.run("show", "PROJ-99")
 	if code != 1 || !strings.Contains(f.err.String(), "not found") || f.out.Len() != 0 {
-		t.Fatalf("код %d, stderr %q", code, f.err.String())
+		t.Fatalf("code %d, stderr %q", code, f.err.String())
 	}
 }
 
@@ -171,17 +171,17 @@ func TestFailureCLIRealScenarios(t *testing.T) {
 			start := time.Now()
 			r := flRunReal(t, context.Background(), tc.base, to, "ls")
 			if time.Since(start) > 10*time.Second {
-				t.Fatalf("зависание: %v", time.Since(start))
+				t.Fatalf("hang: %v", time.Since(start))
 			}
 			wantCode := map[string]int{"401": 3, "403": 3, "500": 4, "refused": 4, "dns": 4, "timeout": 4, "tls": 4, "cut-page2": 4}[name]
 			if wantCode == 0 {
 				wantCode = 1
 			}
 			if r.code != wantCode || r.out != "" || !strings.HasPrefix(r.errOut, "platui: ") || !strings.Contains(r.errOut, tc.want) {
-				t.Fatalf("код %d, stdout %q, stderr %q (ждали %q)", r.code, r.out, r.errOut, tc.want)
+				t.Fatalf("code %d, stdout %q, stderr %q (want %q)", r.code, r.out, r.errOut, tc.want)
 			}
 			if strings.Contains(r.errOut, flKey) || strings.Contains(r.errOut, "<html>") || strings.Contains(r.errOut, tc.base) {
-				t.Fatalf("ключ, адрес или тело ответа в stderr: %q", r.errOut)
+				t.Fatalf("key, URL or response body in stderr: %q", r.errOut)
 			}
 		})
 	}
@@ -201,28 +201,28 @@ func TestFailureCLICtrlC(t *testing.T) {
 	start := time.Now()
 	r := flRunReal(t, ctx, base, 30*time.Second, "ls")
 	if r.code == 0 || time.Since(start) > 5*time.Second || r.out != "" {
-		t.Fatalf("код %d за %v, stdout %q", r.code, time.Since(start), r.out)
+		t.Fatalf("code %d in %v, stdout %q", r.code, time.Since(start), r.out)
 	}
 }
 
-// Ожидание: 401/403 (ключ неверен — чинить конфиг) отличим по коду выхода от сети (можно повторить).
+// Expectation: 401/403 (wrong key — fix the config) is distinguishable by exit code from a network error (retry is possible).
 func TestFailureCLIExitCodesDistinguishAuthFromNetwork(t *testing.T) {
 	auth := flRunReal(t, context.Background(), flServer(t, func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(401) }), 3*time.Second, "ls")
 	net := flRunReal(t, context.Background(), flClosedURL(), 3*time.Second, "ls")
 	if auth.code == 0 || net.code == 0 {
-		t.Fatalf("коды %d %d", auth.code, net.code)
+		t.Fatalf("codes %d %d", auth.code, net.code)
 	}
 	flGap(t, auth.code != net.code,
-		fmt.Sprintf("Run возвращает 1 на любую ошибку (401 и сеть: %d/%d), скрипт не отличит неверный ключ от недоступной сети; правка — cli.go Run (напр. 3 — авторизация, 4 — сеть/таймаут по errors.Is plane.ErrUnauthorized / net.Error), контракт C10", auth.code, net.code))
+		fmt.Sprintf("Run returns 1 for any error (401 and network: %d/%d), so a script cannot tell a wrong key from an unreachable network; fix — cli.go Run (e.g. 3 for auth, 4 for network/timeout via errors.Is plane.ErrUnauthorized / net.Error), contract C10", auth.code, net.code))
 }
 
 func TestFailureCLIUnauthorizedHint(t *testing.T) {
 	r := flRunReal(t, context.Background(), flServer(t, func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(401) }), 3*time.Second, "ls")
 	flGap(t, strings.Contains(strings.ToLower(r.errOut), "api_key") || strings.Contains(strings.ToLower(r.errOut), "api key"),
-		fmt.Sprintf("при 401/403 нет подсказки проверить api_key/api_key_env в конфиге (stderr: %q); правка — cli.go Run", r.errOut))
+		fmt.Sprintf("on 401/403 there is no hint to check api_key/api_key_env in the config (stderr: %q); fix — cli.go Run", r.errOut))
 }
 
-// Таймаут HTTP задаётся в конфиге? Сейчас — зашит 30s в plane.New, main.go HTTPClient не передаёт.
+// Is the HTTP timeout configurable? Currently 30s is hardcoded in plane.New and main.go does not pass an HTTPClient.
 func TestFailureCLITimeoutsConfigurable(t *testing.T) {
 	var find func(rt reflect.Type, depth int) bool
 	find = func(rt reflect.Type, depth int) bool {
@@ -241,5 +241,5 @@ func TestFailureCLITimeoutsConfigurable(t *testing.T) {
 		return false
 	}
 	flGap(t, find(reflect.TypeOf(config.Config{}), 0),
-		"в конфиге нет таймаута запросов к Plane (и числа повторов): 30s и 3 повтора зашиты в plane.New, cmd/platui/main.go не передаёт HTTPClient; правка — config (http.timeout, http.retries) + cmd/platui/main.go build, контракты C1/C0")
+		"the config has no Plane request timeout (or retry count): 30s and 3 retries are hardcoded in plane.New, main.go does not pass an HTTPClient; fix — config (http.timeout, http.retries) + main.go build, contracts C1/C0")
 }

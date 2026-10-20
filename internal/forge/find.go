@@ -19,7 +19,7 @@ type mrJSON struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-// list выполняет `glab mr list <flags> -F json` и разбирает вывод.
+// list runs `glab mr list <flags> -F json` and parses the output.
 func (g *GitLab) list(ctx context.Context, dir string, flags ...string) ([]MR, error) {
 	args := append([]string{"mr", "list"}, flags...)
 	args = append(args, "-F", "json")
@@ -41,7 +41,7 @@ func (g *GitLab) list(ctx context.Context, dir string, flags ...string) ([]MR, e
 	return res, nil
 }
 
-// FindMRs ищет открытые и влитые MR по веткам и ключу задачи.
+// FindMRs finds open and merged MRs by branches and issue key.
 func (g *GitLab) FindMRs(ctx context.Context, dir string, branches []string, key string) ([]MR, error) {
 	seen := map[int]bool{}
 	var all []MR

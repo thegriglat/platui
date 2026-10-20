@@ -22,11 +22,11 @@ const (
 	titleMin  = 20
 )
 
-// colLayout — ширины колонок таблицы; 0 — колонка скрыта.
+// colLayout holds table column widths; 0 means the column is hidden.
 type colLayout struct{ id, title, state, assign int }
 
-// layoutCols: ID/приоритет/ветка фиксированы, название забирает остаток;
-// при нехватке места скрываются сначала исполнители, затем состояние.
+// layoutCols: ID/priority/branch are fixed, the title takes the remainder;
+// when space runs out, assignees are hidden first, then state.
 func (s *session) layoutCols(width int) colLayout {
 	idW := 4
 	if s.project != nil {
@@ -56,7 +56,7 @@ func (s *session) layoutCols(width int) colLayout {
 	return l
 }
 
-// cell обрезает ячейку до w колонок и дополняет пробелами.
+// cell truncates a cell to w columns and pads it with spaces.
 func cell(s string, w int) string {
 	s = ansi.Truncate(s, w, "…")
 	return s + strings.Repeat(" ", max(0, w-lipgloss.Width(s)))
@@ -72,7 +72,7 @@ func prioLabel(p string) string {
 	return "-"
 }
 
-// initials — «AL» для «Anna Lee»; одно слово — две первые буквы.
+// initials returns "AL" for "Anna Lee"; a single word gives its first two letters.
 func initials(name string) string {
 	words := strings.FieldsFunc(name, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) })
 	var out []rune
@@ -112,7 +112,7 @@ func (s *session) stateNameCol(id string) string {
 	return ""
 }
 
-// branchMark — признак ветки: ● локальная, ↑n ahead, ☁ удалённая.
+// branchMark is the branch indicator: ● local, ↑n ahead, ☁ remote.
 func (s *session) branchMark(id string) string {
 	b, ok := s.branches[id]
 	if !ok {
@@ -131,7 +131,7 @@ func (s *session) branchMark(id string) string {
 	return strings.Join(parts, " ")
 }
 
-// mrMark — признак MR по app.CachedMRs (без вызова glab): ⇄ открыт, ✓ влит.
+// mrMark is the MR indicator from app.CachedMRs (no glab call): ⇄ open, ✓ merged.
 func (s *session) mrMark(id string) string {
 	if s.deps.App == nil {
 		return ""
@@ -156,7 +156,7 @@ func mrSign(mrs []forge.MR) string {
 	return ""
 }
 
-// markTitle подсвечивает совпавшие руны заголовка (без цвета — в скобках).
+// markTitle highlights the matched runes of the title (in brackets when colors are off).
 func (s *session) markTitle(it plane.WorkItem) string {
 	h, ok := s.hits[it.ID]
 	if !ok || len(h.Pos) == 0 {
@@ -180,23 +180,23 @@ func (s *session) headerRow(l colLayout) string {
 		}
 		return "▼"
 	}
-	title := "Название"
+	title := "Title"
 	if a := arrow(sortUpdated, false); a != "" {
-		title += " (обновл. " + a + ")"
+		title += " (updated " + a + ")"
 	}
 	parts := []string{cell("", colMark), cell("ID"+arrow(sortID, true), l.id), cell(title, l.title)}
 	if l.state > 0 {
-		parts = append(parts, cell("Сост."+arrow(sortState, true), l.state))
+		parts = append(parts, cell("State"+arrow(sortState, true), l.state))
 	}
-	parts = append(parts, cell("Пр."+arrow(sortPriority, true), colPrio))
+	parts = append(parts, cell("Pri"+arrow(sortPriority, true), colPrio))
 	if l.assign > 0 {
-		parts = append(parts, cell("Исп.", l.assign))
+		parts = append(parts, cell("Asg", l.assign))
 	}
-	parts = append(parts, cell("Ветка", colBranch), cell("MR", colMR))
+	parts = append(parts, cell("Branch", colBranch), cell("MR", colMR))
 	return s.st.muted.Bold(true).Render(strings.Join(parts, " "))
 }
 
-// itemRow — строка таблицы; sel — строка под курсором.
+// itemRow renders a table row; sel marks the row under the cursor.
 func (s *session) itemRow(r row, l colLayout, sel bool) string {
 	it := r.it
 	mark := "  "

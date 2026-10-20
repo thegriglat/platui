@@ -11,7 +11,7 @@ contracts: [{"id": "C0", "version": 1}, {"id": "C1", "version": 7}, {"id": "C2",
 # Контракты модуля tui
 
 Владелец всех стыков — координатор модуля tui. Меняет только он: версия +1, потребителям — `task note`.
-Go-модуль `github.com/thegriglat/platui` (решение пользователя 2026-10-20; ранее `platui`), go 1.24.2, код — `internal/`, бинарь — `cmd/platui`, установка — `go install github.com/thegriglat/platui/cmd/platui@latest`.
+Go-модуль `github.com/thegriglat/platui` (решение пользователя 2026-10-20; ранее `platui`), go 1.24.2, код — `internal/`, бинарь — `main.go` в корне модуля, установка — `go install github.com/thegriglat/platui@latest`.
 
 ## C0. Структура кода v1 (решение пользователя 2026-10-20: код — для удобной поддержки)
 
@@ -22,7 +22,7 @@ Go-модуль `github.com/thegriglat/platui` (решение пользова�
 - `internal/app` (сервисный слой, C5) → config, gitbranch, plane; внешние процессы и окружение — через интерфейсы/функции в опциях;
 - `internal/tui` (C4) → app, config, plane, gitbranch (типы и интерфейсы; конкретные `*plane.Client`/`*gitbranch.Repo` не создаёт);
 - `internal/cli` (PT-10) → app, config, plane, gitbranch (так же);
-- `cmd/platui` — только сборка: разбор флагов, `config.Load`, создание конкретных реализаций, запуск tui/cli; без логики сценариев.
+- `main.go` — только сборка: разбор флагов, `config.Load`, создание конкретных реализаций, запуск tui/cli; без логики сценариев.
 
 Правила:
 - зависимости между слоями — через интерфейсы потребителя или контракта (`plane.API`, `gitbranch.Git`/`Brancher`, интерфейсы C5); у каждого интерфейса — проверка `var _ I = (*Impl)(nil)` рядом с реализацией;
@@ -39,7 +39,7 @@ Go-модуль `github.com/thegriglat/platui` (решение пользова�
 
 ## C1. config v7 — формат YAML-конфига и пакет internal/config (v5–v7 — дельты в docs/contracts/tui-features.md)
 
-Владелец кода: PT-2. Потребители: PT-5 (`cmd/platui`, tui), PT-6 (`config.example.yml`, README).
+Владелец кода: PT-2. Потребители: PT-5 (`main.go`, tui), PT-6 (`config.example.yml`, README).
 
 Путь: флаг `--config <путь>`; иначе `$XDG_CONFIG_HOME/platui/config.yml`; `XDG_CONFIG_HOME` пуст — `~/.config/platui/config.yml`.
 
@@ -207,7 +207,7 @@ func (c *Config) NotifyEnabled() bool
 tabs:
   states: []              # имена состояний (без учёта регистра) в порядке табов; пусто — все состояния проекта, кроме групп из hide_groups, по group (backlog, unstarted, started, completed, cancelled), затем по sequence
   hide_groups: [cancelled] # по умолчанию [cancelled]; применяется только при пустом states; значения — группы состояний
-  all: true               # по умолчанию true: первый таб «Все»
+  all: true               # по умолчанию true: первый таб «All»
 ```
 ```go
 type Tabs struct {

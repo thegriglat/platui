@@ -14,19 +14,19 @@ import (
 	"github.com/thegriglat/platui/internal/text"
 )
 
-// commentsEntry — загруженные комментарии задачи.
+// commentsEntry holds a task's loaded comments.
 type commentsEntry struct {
 	list []plane.Comment
 	err  error
 }
 
-// cardView — общий рендер карточки для превью и полного экрана: прокрутка, кэш Markdown, комментарии.
+// cardView renders a card for both the preview and the full screen: scrolling, Markdown cache, comments.
 type cardView struct {
 	vp       viewport.Model
-	md       map[string]string // кэш glamour по (ключ, ширина)
+	md       map[string]string // glamour cache by (key, width)
 	comments map[string]commentsEntry
 	stats    map[string]statEntry
-	shown    string // ID показанной задачи (при смене — прокрутка в начало)
+	shown    string // ID of the shown task (scrolls to the top on change)
 }
 
 func newCardView() *cardView {
@@ -38,7 +38,7 @@ func newCardView() *cardView {
 	return &cardView{vp: vp, md: map[string]string{}, comments: map[string]commentsEntry{}, stats: map[string]statEntry{}}
 }
 
-// scroll обрабатывает клавишу прокрутки; false — не прокрутка.
+// scroll handles a scroll key; false means it is not a scroll key.
 func (c *cardView) scroll(k string) bool {
 	switch k {
 	case "up":
@@ -59,7 +59,7 @@ func (c *cardView) scroll(k string) bool {
 	return true
 }
 
-// renderMD — Markdown → текст терминала (glamour, WordWrap по ширине; без цветов — notty); кэш по key.
+// renderMD converts Markdown to terminal text (glamour, word-wrapped to width; notty style without colors); cached by key.
 func (c *cardView) renderMD(s *session, key, md string, width int) string {
 	ck := fmt.Sprintf("%s|%d|%t", key, width, s.st.plain)
 	if v, ok := c.md[ck]; ok {
@@ -83,7 +83,7 @@ func (c *cardView) renderMD(s *session, key, md string, width int) string {
 	return out
 }
 
-// highlight подсвечивает руны name на позициях pos.
+// highlight highlights the runes of name at positions pos.
 func highlight(s *session, name string, pos []int) string {
 	if len(pos) == 0 {
 		return name
@@ -131,7 +131,7 @@ func (s *session) labelNames(it plane.WorkItem) []string {
 	return out
 }
 
-// header — заголовок и метаданные задачи.
+// header returns the task title and metadata lines.
 func (c *cardView) header(s *session, it plane.WorkItem, width int) []string {
 	key := itoaKey(s, it.Sequence)
 	title := s.st.bold.Render(key) + " " + highlight(s, it.Name, s.hits[it.ID].Pos)
@@ -140,13 +140,13 @@ func (c *cardView) header(s *session, it plane.WorkItem, width int) []string {
 		assignees = append(assignees, s.memberName(id))
 	}
 	meta := []string{s.stateName(it.StateID), s.st.priority(it.Priority).Render(orDash(it.Priority))}
-	meta = append(meta, "исп.: "+orDash(strings.Join(assignees, ", ")))
+	meta = append(meta, "assignee: "+orDash(strings.Join(assignees, ", ")))
 	lines := []string{title, s.st.muted.Render(strings.Join(meta, " · "))}
 	if ls := s.labelNames(it); len(ls) > 0 {
-		lines = append(lines, s.st.muted.Render("метки: "+strings.Join(ls, ", ")))
+		lines = append(lines, s.st.muted.Render("labels: "+strings.Join(ls, ", ")))
 	}
 	if b, ok := s.branches[it.ID]; ok && b.Name != "" && (b.Local || b.Remote) {
-		lines = append(lines, s.st.muted.Render("ветка: "+b.Name))
+		lines = append(lines, s.st.muted.Render("branch: "+b.Name))
 	}
 	if l := c.statLine(it); l != "" {
 		lines = append(lines, s.st.muted.Render(l))
@@ -164,24 +164,24 @@ func orDash(v string) string {
 	return v
 }
 
-// body — полный текст карточки: заголовок, описание, комментарии.
+// body returns the full card text: header, description, comments.
 func (c *cardView) body(s *session, it plane.WorkItem, width int) string {
 	lines := c.header(s, it, width)
 	if strings.TrimSpace(it.DescHTML) == "" {
-		lines = append(lines, s.st.muted.Render("(нет описания)"))
+		lines = append(lines, s.st.muted.Render("(no description)"))
 	} else {
 		k := fmt.Sprintf("d|%s|%d|%s", it.ID, it.UpdatedAt.UnixNano(), it.DescHTML)
 		lines = append(lines, c.renderMD(s, k, text.HTMLToMarkdown(it.DescHTML), width))
 	}
-	lines = append(lines, "", s.st.accent.Render("Комментарии"))
+	lines = append(lines, "", s.st.accent.Render("Comments"))
 	e, ok := c.comments[it.ID]
 	switch {
 	case !ok:
-		lines = append(lines, s.st.muted.Render("загрузка…"))
+		lines = append(lines, s.st.muted.Render("loading…"))
 	case e.err != nil:
-		lines = append(lines, s.st.err.Render("не загружены: "+e.err.Error()))
+		lines = append(lines, s.st.err.Render("failed to load: "+e.err.Error()))
 	case len(e.list) == 0:
-		lines = append(lines, s.st.muted.Render("(нет комментариев)"))
+		lines = append(lines, s.st.muted.Render("(no comments)"))
 	}
 	for _, cm := range e.list {
 		author := cm.Author
@@ -196,11 +196,11 @@ func (c *cardView) body(s *session, it plane.WorkItem, width int) string {
 	return strings.Join(lines, "\n")
 }
 
-// view рисует карточку задачи id в области width×height; нет задачи — подсказка.
+// view renders the card of task id in a width×height area; shows a hint if there is no task.
 func (c *cardView) view(s *session, id string, width, height int) string {
 	it, ok := s.itemByID(id)
 	if !ok {
-		return s.st.muted.Render("нет задачи")
+		return s.st.muted.Render("no task")
 	}
 	if c.shown != id {
 		c.shown = id
@@ -211,7 +211,7 @@ func (c *cardView) view(s *session, id string, width, height int) string {
 	return c.vp.View()
 }
 
-// onComments запоминает комментарии из commentsMsg.
+// onComments stores the comments from a commentsMsg.
 func (c *cardView) onComments(m commentsMsg) {
 	c.comments[m.itemID] = commentsEntry{list: m.comments, err: m.err}
 }

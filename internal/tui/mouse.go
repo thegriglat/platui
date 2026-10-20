@@ -7,11 +7,11 @@ import (
 )
 
 const (
-	doubleClick = 400 * time.Millisecond // два клика по той же строке
-	wheelStep   = 3                      // строк за один шаг колёсика
+	doubleClick = 400 * time.Millisecond // two clicks on the same row
+	wheelStep   = 3                      // rows per wheel step
 )
 
-// rowClickMsg — клик по строке таблицы (row — индекс в видимом списке); open — двойной клик.
+// rowClickMsg is a click on a table row (row is the index in the visible list); open means double click.
 type rowClickMsg struct {
 	row  int
 	open bool
@@ -31,7 +31,7 @@ const (
 	zonePreview
 )
 
-// bodyTop — первая строка тела главного экрана (после табов и строки поиска).
+// bodyTop is the first line of the main screen body (after tabs and the search line).
 func (s *session) bodyTop() int {
 	if s.searchRow() != "" {
 		return 2
@@ -39,7 +39,7 @@ func (s *session) bodyTop() int {
 	return 1
 }
 
-// hit определяет область под точкой: для табов — индекс таба, для таблицы — номер строки данных.
+// hit determines the area under the point: for tabs the tab index, for the table the data row number.
 func (s *session) hit(x, y int) (z zone, idx int) {
 	if y == 0 {
 		for i, sp := range s.tabSpans(s.width) {
@@ -60,10 +60,10 @@ func (s *session) hit(x, y int) (z zone, idx int) {
 	case x == lw:
 		return zoneNone, 0
 	}
-	return zoneTable, y - top - 1 // строка 0 тела — заголовок таблицы
+	return zoneTable, y - top - 1 // body row 0 is the table header
 }
 
-// tabSpans — границы [x0, x1) показанных табов (по индексу таба; невидимые — {0, 0}); из той же раскладки, что tabsLine.
+// tabSpans returns the [x0, x1) bounds of shown tabs (by tab index; hidden ones are {0, 0}); from the same layout as tabsLine.
 func (s *session) tabSpans(width int) [][2]int {
 	l := s.tabsLayout(width)
 	out := make([][2]int, len(l.cells))
@@ -76,7 +76,7 @@ func (s *session) tabSpans(width int) [][2]int {
 	return out
 }
 
-// mouse обрабатывает tea.MouseMsg главного экрана: клик по табу/строке/панели, колёсико.
+// mouse handles tea.MouseMsg of the main screen: click on tab/row/pane, wheel.
 func (ms *mainScreen) mouse(s *session, m tea.MouseMsg) tea.Cmd {
 	z, idx := s.hit(m.X, m.Y)
 	if m.Action != tea.MouseActionPress {
@@ -123,7 +123,7 @@ func (ms *mainScreen) click(s *session, z zone, idx int) tea.Cmd {
 	return nil
 }
 
-// clickRow: курсор на строку; второй клик ≤ 400 мс по той же задаче — открыть карточку.
+// clickRow: cursor to the row; a second click within 400 ms on the same task opens the card.
 func (ms *mainScreen) clickRow(s *session, row int) tea.Cmd {
 	t, ok := ms.table.(*table)
 	if !ok {

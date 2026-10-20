@@ -17,7 +17,7 @@ func TestBranchOnly(t *testing.T) {
 		t.Fatalf("%+v %v", res, err)
 	}
 	if len(e.api.Calls) != 0 {
-		t.Errorf("Plane не должен вызываться: %v", e.api.Calls)
+		t.Errorf("Plane must not be called: %v", e.api.Calls)
 	}
 	res, err = e.app.Branch(p, it, "", nil, false)
 	if !errors.Is(err, gitbranch.ErrBranchExists) || res.Created || res.Name != "PROJ-3-fix-it" {

@@ -1,4 +1,4 @@
-// Package planetest — фейк plane.API для тестов потребителей (контракт C3 v3).
+// Package planetest is a fake plane.API for consumer tests (contract C3 v3).
 package planetest
 
 import (
@@ -12,7 +12,7 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// Fake — потокобезопасная реализация plane.API в памяти.
+// Fake is a thread-safe in-memory implementation of plane.API.
 type Fake struct {
 	Mu        sync.Mutex
 	MeV       plane.Member
@@ -22,14 +22,14 @@ type Fake struct {
 	LabelsV   map[string][]plane.Label
 	ItemsV    map[string][]plane.WorkItem
 	CommentsV map[string][]plane.Comment
-	Err       map[string]error // имя метода → ошибка
-	Calls     []string         // журнал вызовов
-	Web       string           // база для WebURL; пусто — https://app.plane.so/ws
+	Err       map[string]error // method name → error
+	Calls     []string         // call log
+	Web       string           // base for WebURL; empty: https://app.plane.so/ws
 }
 
 var _ plane.API = (*Fake)(nil)
 
-// NewFake создаёт Fake с пустыми картами.
+// NewFake creates a Fake with empty maps.
 func NewFake() *Fake {
 	return &Fake{
 		StatesV: map[string][]plane.State{}, MembersV: map[string][]plane.Member{},
@@ -38,7 +38,7 @@ func NewFake() *Fake {
 	}
 }
 
-// enter пишет вызов в журнал и возвращает заданную ошибку; Mu берётся здесь, снимается через unlock.
+// enter logs the call and returns the configured error; Mu is taken here and released via unlock.
 func (f *Fake) enter(method string, args ...string) error {
 	f.Mu.Lock()
 	call := method
@@ -51,7 +51,7 @@ func (f *Fake) enter(method string, args ...string) error {
 
 func (f *Fake) unlock() { f.Mu.Unlock() }
 
-// Me возвращает MeV.
+// Me returns MeV.
 func (f *Fake) Me(context.Context) (plane.Member, error) {
 	defer f.unlock()
 	if err := f.enter("Me"); err != nil {
@@ -60,7 +60,7 @@ func (f *Fake) Me(context.Context) (plane.Member, error) {
 	return f.MeV, nil
 }
 
-// Projects возвращает копию ProjectsV.
+// Projects returns a copy of ProjectsV.
 func (f *Fake) Projects(context.Context) ([]plane.Project, error) {
 	defer f.unlock()
 	if err := f.enter("Projects"); err != nil {
@@ -69,7 +69,7 @@ func (f *Fake) Projects(context.Context) ([]plane.Project, error) {
 	return slices.Clone(f.ProjectsV), nil
 }
 
-// States возвращает состояния проекта.
+// States returns the project states.
 func (f *Fake) States(_ context.Context, pid string) ([]plane.State, error) {
 	defer f.unlock()
 	if err := f.enter("States", pid); err != nil {
@@ -78,7 +78,7 @@ func (f *Fake) States(_ context.Context, pid string) ([]plane.State, error) {
 	return slices.Clone(f.StatesV[pid]), nil
 }
 
-// Members возвращает участников проекта.
+// Members returns the project members.
 func (f *Fake) Members(_ context.Context, pid string) ([]plane.Member, error) {
 	defer f.unlock()
 	if err := f.enter("Members", pid); err != nil {
@@ -87,7 +87,7 @@ func (f *Fake) Members(_ context.Context, pid string) ([]plane.Member, error) {
 	return slices.Clone(f.MembersV[pid]), nil
 }
 
-// Labels возвращает метки проекта.
+// Labels returns the project labels.
 func (f *Fake) Labels(_ context.Context, pid string) ([]plane.Label, error) {
 	defer f.unlock()
 	if err := f.enter("Labels", pid); err != nil {
@@ -96,7 +96,7 @@ func (f *Fake) Labels(_ context.Context, pid string) ([]plane.Label, error) {
 	return slices.Clone(f.LabelsV[pid]), nil
 }
 
-// WorkItems возвращает задачи проекта.
+// WorkItems returns the project tasks.
 func (f *Fake) WorkItems(_ context.Context, pid string) ([]plane.WorkItem, error) {
 	defer f.unlock()
 	if err := f.enter("WorkItems", pid); err != nil {
@@ -119,7 +119,7 @@ func cloneItems(l []plane.WorkItem) []plane.WorkItem {
 	return out
 }
 
-// WorkItemByKey ищет по ProjectsV[].Identifier и Sequence.
+// WorkItemByKey looks up by ProjectsV[].Identifier and Sequence.
 func (f *Fake) WorkItemByKey(_ context.Context, identifier string, seq int) (plane.WorkItem, error) {
 	defer f.unlock()
 	if err := f.enter("WorkItemByKey", fmt.Sprintf("%s-%d", identifier, seq)); err != nil {
@@ -138,7 +138,7 @@ func (f *Fake) WorkItemByKey(_ context.Context, identifier string, seq int) (pla
 	return plane.WorkItem{}, plane.ErrNotFound
 }
 
-// Search — подстрока без учёта регистра в Name, limit<=0 → 50.
+// Search matches a case-insensitive substring of Name, limit<=0 → 50.
 func (f *Fake) Search(_ context.Context, query, pid string, limit int) ([]plane.SearchHit, error) {
 	defer f.unlock()
 	if err := f.enter("Search", query, pid); err != nil {
@@ -174,7 +174,7 @@ func (f *Fake) Search(_ context.Context, query, pid string, limit int) ([]plane.
 	return out, nil
 }
 
-// WorkItem возвращает задачу или plane.ErrNotFound.
+// WorkItem returns the task or plane.ErrNotFound.
 func (f *Fake) WorkItem(_ context.Context, pid, id string) (plane.WorkItem, error) {
 	defer f.unlock()
 	if err := f.enter("WorkItem", pid, id); err != nil {
@@ -188,7 +188,7 @@ func (f *Fake) WorkItem(_ context.Context, pid, id string) (plane.WorkItem, erro
 	return plane.WorkItem{}, plane.ErrNotFound
 }
 
-// CreateWorkItem добавляет задачу со следующим Sequence.
+// CreateWorkItem adds a task with the next Sequence.
 func (f *Fake) CreateWorkItem(_ context.Context, pid string, n plane.NewWorkItem) (plane.WorkItem, error) {
 	defer f.unlock()
 	if err := f.enter("CreateWorkItem", pid); err != nil {
@@ -211,7 +211,7 @@ func (f *Fake) CreateWorkItem(_ context.Context, pid string, n plane.NewWorkItem
 	return cloneItem(it), nil
 }
 
-// UpdateWorkItem применяет заданные поля патча.
+// UpdateWorkItem applies the patch's set fields.
 func (f *Fake) UpdateWorkItem(_ context.Context, pid, id string, p plane.WorkItemPatch) (plane.WorkItem, error) {
 	defer f.unlock()
 	if err := f.enter("UpdateWorkItem", pid, id); err != nil {
@@ -246,7 +246,7 @@ func (f *Fake) UpdateWorkItem(_ context.Context, pid, id string, p plane.WorkIte
 	return plane.WorkItem{}, plane.ErrNotFound
 }
 
-// Comments возвращает комментарии задачи.
+// Comments returns the task comments.
 func (f *Fake) Comments(_ context.Context, pid, id string) ([]plane.Comment, error) {
 	defer f.unlock()
 	if err := f.enter("Comments", pid, id); err != nil {
@@ -255,7 +255,7 @@ func (f *Fake) Comments(_ context.Context, pid, id string) ([]plane.Comment, err
 	return slices.Clone(f.CommentsV[id]), nil
 }
 
-// CreateComment добавляет комментарий от MeV.
+// CreateComment adds a comment from MeV.
 func (f *Fake) CreateComment(_ context.Context, pid, id, html string) (plane.Comment, error) {
 	defer f.unlock()
 	if err := f.enter("CreateComment", pid, id); err != nil {
@@ -266,7 +266,7 @@ func (f *Fake) CreateComment(_ context.Context, pid, id, html string) (plane.Com
 	return cm, nil
 }
 
-// WebURL строит ссылку <Web>/browse/<Identifier>-<Sequence>/.
+// WebURL builds the link <Web>/browse/<Identifier>-<Sequence>/.
 func (f *Fake) WebURL(p plane.Project, it plane.WorkItem) string {
 	f.Mu.Lock()
 	defer f.Mu.Unlock()

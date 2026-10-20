@@ -9,7 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// helpScreen — оверлей справки: привязки области из реестра действий по группам.
+// helpScreen is the help overlay: the scope's bindings from the action registry, by group.
 type helpScreen struct {
 	under string
 	vp    viewport.Model
@@ -24,7 +24,7 @@ func newHelp(under string) *helpScreen {
 	return &helpScreen{under: under, vp: vp}
 }
 
-func (h *helpScreen) Title() string       { return "справка" }
+func (h *helpScreen) Title() string       { return "help" }
 func (h *helpScreen) Scope() string       { return "help" }
 func (h *helpScreen) CapturesInput() bool { return false }
 
@@ -55,14 +55,14 @@ func (h *helpScreen) content(s *session) string {
 		}
 		if a.Group != group {
 			group = a.Group
-			b.WriteString("\n" + s.st.accent.Bold(true).Render(strings.ToUpper(group[:2])+group[2:]) + "\n")
+			b.WriteString("\n" + s.st.accent.Bold(true).Render(strings.ToUpper(group[:1])+group[1:]) + "\n")
 		}
 		keys := keysLabel(a.Keys)
 		pad := strings.Repeat(" ", max(1, 22-lipglossWidth(keys)))
 		b.WriteString("  " + s.st.bold.Render(keys) + pad + a.Title + "\n")
 	}
 	if cmds := s.deps.Config.Commands; len(cmds) > 0 && slices.Contains(cardScopes, h.under) {
-		b.WriteString("\n" + s.st.accent.Bold(true).Render("Свои") + "\n")
+		b.WriteString("\n" + s.st.accent.Bold(true).Render("Custom") + "\n")
 		for _, c := range cmds {
 			keys := keysLabel(nonEmpty(c.Key))
 			pad := strings.Repeat(" ", max(1, 22-lipglossWidth(keys)))
@@ -75,7 +75,7 @@ func (h *helpScreen) content(s *session) string {
 func (h *helpScreen) View(s *session) string {
 	h.vp.Width, h.vp.Height = s.width, max(s.height-2, 1)
 	h.vp.SetContent(h.content(s))
-	head := s.st.accent.Bold(true).Render(" Справка — привязки клавиш")
-	foot := s.st.muted.Render(" ↑↓ прокрутка   Esc, q, ?, h закрыть")
+	head := s.st.accent.Bold(true).Render(" Help — key bindings")
+	foot := s.st.muted.Render(" ↑↓ scroll   Esc, q, ?, h close")
 	return head + "\n" + h.vp.View() + "\n" + foot
 }

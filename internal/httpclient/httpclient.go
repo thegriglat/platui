@@ -13,7 +13,7 @@ import (
 // Options configures New.
 type Options struct {
 	Timeout time.Duration
-	CAFile  string // путь (уже раскрытый); пусто — только системные CA
+	CAFile  string // path (already expanded); empty — system CAs only
 }
 
 // New returns a client trusting system CAs plus the certificates from CAFile.

@@ -24,7 +24,7 @@ func (a *App) mrTTL() time.Duration {
 	return 0
 }
 
-// mrBranches — ветки задачи: по шаблону, текущая и локальные с тем же ID.
+// mrBranches returns the task's branches: from the template, the current one and local ones with the same ID.
 func (a *App) mrBranches(p plane.Project, it plane.WorkItem) []string {
 	var out []string
 	if n, err := a.BranchName(p, it); err == nil && n != "" {
@@ -51,7 +51,7 @@ func (a *App) mrBranches(p plane.Project, it plane.WorkItem) []string {
 	return out
 }
 
-// MRs — MR задачи через glab; результат кэшируется на cfg.GitLab.MRCache (fresh — в обход кэша).
+// MRs returns the task's MRs via glab; the result is cached for cfg.GitLab.MRCache (fresh bypasses the cache).
 func (a *App) MRs(ctx context.Context, p plane.Project, it plane.WorkItem, fresh bool) ([]forge.MR, error) {
 	ttl := a.mrTTL()
 	if !fresh && ttl > 0 {
@@ -81,7 +81,7 @@ func (a *App) MRs(ctx context.Context, p plane.Project, it plane.WorkItem, fresh
 	return mrs, nil
 }
 
-// CachedMRs — MR из памяти или кэша без вызова glab.
+// CachedMRs returns MRs from memory or cache without calling glab.
 func (a *App) CachedMRs(itemID string) ([]forge.MR, bool) {
 	a.mu.Lock()
 	mrs, ok := a.mrs[itemID]

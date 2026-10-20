@@ -14,8 +14,8 @@ import (
 	"github.com/thegriglat/platui/internal/runner"
 )
 
-// BuiltinKeys — все клавиши реестра встроенных действий (без повторов, по порядку);
-// cmd/platui проверяет ими ключи своих команд до запуска TUI (C4 v6).
+// BuiltinKeys returns all keys of the built-in action registry (deduplicated, in order);
+// main.go checks custom command keys against them before starting the TUI (C4 v6).
 func BuiltinKeys() []string {
 	var out []string
 	for _, a := range registry {
@@ -28,7 +28,7 @@ func BuiltinKeys() []string {
 	return out
 }
 
-// customFor — своя команда по клавише в области экрана (встроенные действия приоритетнее).
+// customFor returns the custom command bound to a key in the screen scope (built-in actions take priority).
 func (s *session) customFor(scope, name string) (config.Command, bool) {
 	if !slices.Contains(cardScopes, scope) {
 		return config.Command{}, false
@@ -41,7 +41,7 @@ func (s *session) customFor(scope, name string) (config.Command, bool) {
 	return config.Command{}, false
 }
 
-// customTarget — задача под курсором или открытая карточка.
+// customTarget returns the task under the cursor or the open card.
 func (s *session) customTarget(scope string) (plane.WorkItem, bool) {
 	id := s.cursor
 	if scope == "item" && s.openItem != "" {
@@ -49,13 +49,13 @@ func (s *session) customTarget(scope string) (plane.WorkItem, bool) {
 	}
 	it, ok := s.itemByID(id)
 	if !ok || s.project == nil {
-		s.setStatus("нет задачи", true)
+		s.setStatus("no task", true)
 		return it, false
 	}
 	return it, true
 }
 
-// runCustom: плейсхолдеры → confirm (при confirm: true) → запуск.
+// runCustom: placeholders, then confirm (when confirm: true), then run.
 func runCustom(s *session, scope string, c config.Command) tea.Cmd {
 	it, ok := s.customTarget(scope)
 	if !ok {
@@ -66,10 +66,10 @@ func runCustom(s *session, scope string, c config.Command) tea.Cmd {
 	if !c.Confirm {
 		return start()
 	}
-	return confirmWith("Запустить «"+c.Name+"»: "+app.RenderCommand(c.Command, v)+"?", start)
+	return confirmWith("Run \""+c.Name+"\": "+app.RenderCommand(c.Command, v)+"?", start)
 }
 
-// customDoneMsg — результат команды output=window для своего окна вывода.
+// customDoneMsg is the result of an output=window command for its own output window.
 type customDoneMsg struct {
 	win *outputScreen
 	res runner.Result
@@ -78,7 +78,7 @@ type customDoneMsg struct {
 
 func execCustom(s *session, c config.Command, v app.CommandVars) tea.Cmd {
 	a := s.deps.App
-	s.setStatus("выполняется: "+c.Name+"…", false)
+	s.setStatus("running: "+c.Name+"…", false)
 	if c.Output == config.OutputWindow {
 		ctx, cancel := context.WithCancel(s.ctx)
 		win := newRunningOutput(c.Name, cancel)
@@ -99,7 +99,7 @@ func execCustom(s *session, c config.Command, v app.CommandVars) tea.Cmd {
 		}
 		if l := lastLine(res.Stdout, res.Stderr); l != "" {
 			if failed {
-				l = fmt.Sprintf("%s (код %d)", l, res.ExitCode)
+				l = fmt.Sprintf("%s (code %d)", l, res.ExitCode)
 			}
 			return statusMsg{l, failed}
 		}
@@ -109,12 +109,12 @@ func execCustom(s *session, c config.Command, v app.CommandVars) tea.Cmd {
 
 func doneText(name string, code int) string {
 	if code != 0 {
-		return fmt.Sprintf("ошибка: %s (код %d)", name, code)
+		return fmt.Sprintf("error: %s (code %d)", name, code)
 	}
-	return "готово: " + name
+	return "done: " + name
 }
 
-// lastLine — последняя непустая строка stdout, иначе stderr.
+// lastLine returns the last non-empty line of stdout, otherwise of stderr.
 func lastLine(outs ...string) string {
 	for _, o := range outs {
 		lines := strings.Split(strings.TrimRight(o, "\n\r "), "\n")
@@ -127,14 +127,14 @@ func lastLine(outs ...string) string {
 	return ""
 }
 
-// customEntries — свои команды в палитре (под названием).
+// customEntries returns custom commands for the palette (under the title).
 func customEntries(s *session, under string, closeThen func(tea.Cmd) tea.Cmd) []palEntry {
 	if !slices.Contains(cardScopes, under) {
 		return nil
 	}
 	var out []palEntry
 	for _, c := range s.deps.Config.Commands {
-		out = append(out, palEntry{kind: "команда", title: c.Name, keys: keysLabel(nonEmpty(c.Key)),
+		out = append(out, palEntry{kind: "command", title: c.Name, keys: keysLabel(nonEmpty(c.Key)),
 			run: func() tea.Cmd { return closeThen(runCustom(s, under, c)) }})
 	}
 	return out

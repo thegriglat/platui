@@ -2,10 +2,10 @@ package tui
 
 import tea "github.com/charmbracelet/bubbletea"
 
-// mainScreen — основной экран: таблица и превью.
+// mainScreen is the main screen: table and preview.
 type mainScreen struct {
 	table, preview pane
-	last           clickMark // последний клик по строке (двойной клик)
+	last           clickMark // last click on a row (double click)
 }
 
 func newMainScreen(s *session) *mainScreen {

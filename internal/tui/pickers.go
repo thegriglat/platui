@@ -9,15 +9,15 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// pickRow — строка списка выбора; Hot — клавиша быстрого выбора (необязательно).
+// pickRow is a picker list row; Hot is the quick-select key (optional).
 type pickRow struct{ Label, Hot string }
 
-// listScreen — модальный список выбора: ↑/↓, Enter, Esc, клавиши быстрого выбора.
+// listScreen is a modal picker list: ↑/↓, Enter, Esc, quick-select keys.
 type listScreen struct {
 	title    string
 	rows     []pickRow
 	list     cursorList
-	onSelect func(i int) tea.Cmd // вызывается после закрытия списка
+	onSelect func(i int) tea.Cmd // called after the list closes
 }
 
 func newListScreen(title string, rows []pickRow, cur int, onSelect func(int) tea.Cmd) *listScreen {
@@ -78,12 +78,12 @@ func (l *listScreen) View(s *session) string {
 	for len(out) < h+1 {
 		out = append(out, "")
 	}
-	out = append(out, s.st.muted.Render(" ↑↓ выбор   Enter выбрать   Esc отмена"), s.statusView(s.width))
+	out = append(out, s.st.muted.Render(" ↑↓ select   Enter choose   Esc cancel"), s.statusView(s.width))
 	return strings.Join(out, "\n")
 }
 
-// pickLater — колбэк onPick может передать команду (например, patchItem): picker вернёт её
-// после закрытия списка. Вызывается только из onPick (Update однопоточен).
+// pickLater — the onPick callback may return a command (e.g. patchItem): the picker returns it
+// after the list closes. Called only from onPick (Update is single-threaded).
 var queuedCmd []tea.Cmd
 
 func pickLater(c tea.Cmd) { queuedCmd = append(queuedCmd, c) }
@@ -96,11 +96,11 @@ func runPick(call func()) tea.Cmd {
 	return c
 }
 
-// priorities — приоритеты Plane в порядке убывания.
+// priorities are the Plane priorities in descending order.
 var priorities = []string{"urgent", "high", "medium", "low", "none"}
 
 func init() {
-	// порядок состояний — как у табов (app.StateTabs), затем скрытые.
+	// state order is the same as the tabs (app.StateTabs), then hidden ones.
 	pickState = func(s *session, onPick func(plane.State)) screen {
 		states := slices.Clone(s.tabs)
 		for _, st := range s.meta.States {
@@ -112,7 +112,7 @@ func init() {
 		for i, st := range states {
 			rows[i] = pickRow{Label: st.Name + s.st.muted.Render("  "+st.Group)}
 		}
-		return newListScreen("Состояние", rows, 0, func(i int) tea.Cmd {
+		return newListScreen("State", rows, 0, func(i int) tea.Cmd {
 			return runPick(func() { onPick(states[i]) })
 		})
 	}
@@ -121,7 +121,7 @@ func init() {
 		for i, p := range priorities {
 			rows[i] = pickRow{Label: s.st.priority(p).Render(p)}
 		}
-		return newListScreen("Приоритет", rows, 0, func(i int) tea.Cmd {
+		return newListScreen("Priority", rows, 0, func(i int) tea.Cmd {
 			return runPick(func() { onPick(priorities[i]) })
 		})
 	}
@@ -131,7 +131,7 @@ func init() {
 		for i, l := range labels {
 			rows[i] = pickRow{Label: l.Name}
 		}
-		return newListScreen("Метка", rows, 0, func(i int) tea.Cmd {
+		return newListScreen("Label", rows, 0, func(i int) tea.Cmd {
 			return runPick(func() { onPick(labels[i]) })
 		})
 	}

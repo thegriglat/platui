@@ -4,10 +4,10 @@ import (
 	"github.com/thegriglat/platui/internal/config"
 )
 
-const previewStep = 5 // шаг изменения ширины превью, %
+const previewStep = 5 // preview width change step, %
 
-// panelState — сессионная раскладка панелей: ширина превью (%) и режим «превью на весь экран» (C4 v6, фича 14).
-// Хранится в session.panel.
+// panelState is the session pane layout: preview width (%) and "preview full screen" mode (C4 v6, feature 14).
+// Stored in session.panel.
 type panelState struct {
 	pct  int
 	zoom bool
@@ -17,14 +17,14 @@ func clampPct(p int) int {
 	return max(config.MinPreviewWidth, min(p, config.MaxPreviewWidth))
 }
 
-// resizePreview меняет ширину превью на delta процентов в пределах 20..80.
+// resizePreview changes the preview width by delta percent within 20..80.
 func (s *session) resizePreview(delta int) {
 	p := &s.panel
 	p.pct = clampPct(p.pct + delta)
-	s.setStatus("превью: "+itoa(p.pct)+"%", false)
+	s.setStatus("preview: "+itoa(p.pct)+"%", false)
 }
 
-// toggleZoom — превью на весь экран и обратно.
+// toggleZoom switches the preview to full screen and back.
 func (s *session) toggleZoom() {
 	p := &s.panel
 	p.zoom = !p.zoom
@@ -33,7 +33,7 @@ func (s *session) toggleZoom() {
 	}
 }
 
-// panelKey обрабатывает клавиши раскладки главного экрана; true — клавиша обработана.
+// panelKey handles main screen layout keys; true means the key was handled.
 func (s *session) panelKey(k string) bool {
 	switch k {
 	case "<":

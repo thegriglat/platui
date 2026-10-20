@@ -11,7 +11,7 @@ import (
 
 var cardScopes = []string{"main", "kanban", "item"}
 
-// target — задача, над которой работает действие: открытая карточка или задача под курсором.
+// target returns the task the action works on: the open card or the task under the cursor.
 func (m *model) target() (plane.WorkItem, bool) {
 	id := m.s.cursor
 	if m.top().Scope() == "item" && m.s.openItem != "" {
@@ -19,13 +19,13 @@ func (m *model) target() (plane.WorkItem, bool) {
 	}
 	it, ok := m.s.itemByID(id)
 	if !ok || m.s.project == nil {
-		m.s.setStatus("нет задачи", true)
+		m.s.setStatus("no task", true)
 		return it, false
 	}
 	return it, true
 }
 
-// patchWith применяет патч (app.Update) → itemMsg и сообщение об успехе в статусе.
+// patchWith applies a patch (app.Update), yielding an itemMsg and a success message in the status.
 func patchWith(s *session, id string, p plane.WorkItemPatch, done string) tea.Cmd {
 	a, pid := s.deps.App, s.project.ID
 	return func() tea.Msg {
@@ -37,7 +37,7 @@ func patchWith(s *session, id string, p plane.WorkItemPatch, done string) tea.Cm
 	}
 }
 
-// withTarget оборачивает действие: Run получает задачу или ничего не делает.
+// withTarget wraps an action: Run gets the task or does nothing.
 func withTarget(f func(m *model, it plane.WorkItem) tea.Cmd) func(m *model) tea.Cmd {
 	return func(m *model) tea.Cmd {
 		if it, ok := m.target(); ok {
@@ -49,43 +49,43 @@ func withTarget(f func(m *model, it plane.WorkItem) tea.Cmd) func(m *model) tea.
 
 func init() {
 	for _, a := range []action{
-		{ID: "item.state", Title: "Сменить состояние", Group: "задача", Keys: []string{"s"}, Hint: "состояние", Scopes: cardScopes,
+		{ID: "item.state", Title: "Change state", Group: "task", Keys: []string{"s"}, Hint: "state", Scopes: cardScopes,
 			Run: withTarget(func(m *model, it plane.WorkItem) tea.Cmd {
 				s := m.s
 				return pushScreen(pickState(s, func(st plane.State) {
-					cmd := patchWith(s, it.ID, plane.WorkItemPatch{StateID: &st.ID}, "состояние: "+st.Name)
+					cmd := patchWith(s, it.ID, plane.WorkItemPatch{StateID: &st.ID}, "state: "+st.Name)
 					if destructiveState(st) {
-						cmd = confirm(s, "Перевести "+itoaKey(s, it.Sequence)+" в "+st.Name+"?", cmd)
+						cmd = confirm(s, "Move "+itoaKey(s, it.Sequence)+" to "+st.Name+"?", cmd)
 					}
 					pickLater(cmd)
 				}))
 			})},
-		{ID: "item.priority", Title: "Сменить приоритет", Group: "задача", Keys: []string{"p"}, Hint: "приоритет", Scopes: cardScopes,
+		{ID: "item.priority", Title: "Change priority", Group: "task", Keys: []string{"p"}, Hint: "priority", Scopes: cardScopes,
 			Run: withTarget(func(m *model, it plane.WorkItem) tea.Cmd {
 				s := m.s
 				return pushScreen(pickPriority(s, func(p string) {
-					pickLater(patchWith(s, it.ID, plane.WorkItemPatch{Priority: &p}, "приоритет: "+p))
+					pickLater(patchWith(s, it.ID, plane.WorkItemPatch{Priority: &p}, "priority: "+p))
 				}))
 			})},
-		{ID: "item.assign", Title: "Назначить на себя", Group: "задача", Keys: []string{"a"}, Hint: "на себя", Scopes: cardScopes,
+		{ID: "item.assign", Title: "Assign to me", Group: "task", Keys: []string{"a"}, Hint: "assign", Scopes: cardScopes,
 			Run: withTarget(func(m *model, it plane.WorkItem) tea.Cmd {
 				s := m.s
 				if slices.Contains(it.AssigneeIDs, s.me.ID) {
-					s.setStatus("задача уже назначена на вас", false)
+					s.setStatus("task is already assigned to you", false)
 					return nil
 				}
 				ids := append(slices.Clone(it.AssigneeIDs), s.me.ID)
-				return patchWith(s, it.ID, plane.WorkItemPatch{AssigneeIDs: &ids}, "назначено на вас")
+				return patchWith(s, it.ID, plane.WorkItemPatch{AssigneeIDs: &ids}, "assigned to you")
 			})},
-		{ID: "item.open", Title: "Открыть в браузере", Group: "задача", Keys: []string{"O"}, Hint: "браузер", Scopes: cardScopes,
+		{ID: "item.open", Title: "Open in browser", Group: "task", Keys: []string{"O"}, Hint: "browser", Scopes: cardScopes,
 			Run: withTarget(func(m *model, it plane.WorkItem) tea.Cmd {
 				s := m.s
 				url := s.deps.App.CopyItems(*s.project, it).URL
 				return func() tea.Msg {
 					if err := s.deps.OpenURL(url); err != nil {
-						return statusMsg{"браузер: " + err.Error(), true}
+						return statusMsg{"browser: " + err.Error(), true}
 					}
-					return statusMsg{"открыто: " + url, false}
+					return statusMsg{"opened: " + url, false}
 				}
 			})},
 	} {

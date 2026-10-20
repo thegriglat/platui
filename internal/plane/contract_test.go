@@ -56,7 +56,7 @@ func TestContractPlane(t *testing.T) {
 		t.Fatalf("projects=%v err=%v pages=%d", ps, err, pages)
 	}
 
-	// 429 -> повтор
+	// 429 -> retry
 	var n int32
 	c, sleeps := newTest(t, func(w http.ResponseWriter, r *http.Request) {
 		if atomic.AddInt32(&n, 1) == 1 {
@@ -82,7 +82,7 @@ func TestContractPlane(t *testing.T) {
 		t.Fatalf("err=%v", err)
 	}
 
-	// поля WorkItem
+	// WorkItem fields
 	c, _ = newTest(t, func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != pfx+"projects/p1/work-items/i1/" {
 			t.Errorf("path %s", r.URL.Path)
@@ -147,7 +147,7 @@ func TestContractPlaneRetryExhausted(t *testing.T) {
 			t.Fatalf("sleeps=%v", *sleeps)
 		}
 	}
-	// 503 исчерпан -> APIError, не ErrRateLimited
+	// 503 exhausted -> APIError, not ErrRateLimited
 	c, _ = newTest(t, func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(503) })
 	_, err = c.Me(context.Background())
 	var ae *APIError

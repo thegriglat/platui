@@ -9,11 +9,11 @@ import (
 	"github.com/thegriglat/platui/internal/runner"
 )
 
-// CommandVars — значения плейсхолдеров своих команд.
+// CommandVars holds the placeholder values for custom commands.
 type CommandVars struct{ ID, Key, Branch, URL, Title, MRURL string }
 
-// CommandVars собирает плейсхолдеры: ID — идентификатор задачи в Plane,
-// Key — PROJ-N, MRURL — первый MR из кэша или "".
+// CommandVars builds the placeholders: ID is the task identifier in Plane,
+// Key is PROJ-N, MRURL is the first MR from the cache or "".
 func (a *App) CommandVars(p plane.Project, it plane.WorkItem) CommandVars {
 	br, _ := a.BranchName(p, it)
 	v := CommandVars{ID: it.ID, Key: p.Identifier + "-" + itoa(it.Sequence), Branch: br,
@@ -26,8 +26,8 @@ func (a *App) CommandVars(p plane.Project, it plane.WorkItem) CommandVars {
 
 func shQuote(s string) string { return "'" + strings.ReplaceAll(s, "'", `'\''`) + "'" }
 
-// RenderCommand подставляет плейсхолдеры; значения экранируются для sh
-// (одинарные кавычки), подставленный текст не интерпретируется повторно.
+// RenderCommand substitutes the placeholders; values are escaped for sh
+// (single quotes), and the substituted text is not interpreted again.
 func RenderCommand(tmpl string, v CommandVars) string {
 	return strings.NewReplacer(
 		"{id}", shQuote(v.ID), "{key}", shQuote(v.Key), "{branch}", shQuote(v.Branch),
@@ -35,7 +35,7 @@ func RenderCommand(tmpl string, v CommandVars) string {
 	).Replace(tmpl)
 }
 
-// RunCommand запускает команду в корне репозитория (Git nil — в текущем каталоге).
+// RunCommand runs the command at the repository root (nil Git: in the current directory).
 func (a *App) RunCommand(ctx context.Context, c config.Command, v CommandVars) (runner.Result, error) {
 	dir := "."
 	if a.d.Git != nil {

@@ -8,16 +8,16 @@ import (
 	"strings"
 )
 
-// ErrEmptyEdit — после правки текст пуст.
+// ErrEmptyEdit means the text is empty after editing.
 var ErrEmptyEdit = errors.New("empty text, cancelled")
 
-// EditSession — правка текста во внешнем редакторе через временный файл.
+// EditSession edits text in an external editor via a temp file.
 type EditSession struct {
-	Path  string // временный файл *.md
+	Path  string // temp *.md file
 	hints []string
 }
 
-// NewEditSession создаёт файл с initial и строками-подсказками «# …» в конце.
+// NewEditSession creates a file with initial and trailing "# …" hint lines.
 func NewEditSession(initial, hint string) (*EditSession, error) {
 	f, err := os.CreateTemp("", "platui-*.md")
 	if err != nil {
@@ -39,12 +39,12 @@ func NewEditSession(initial, hint string) (*EditSession, error) {
 	return s, nil
 }
 
-// Command собирает команду запуска редактора (editor — config.EditorCmd()).
+// Command builds the editor launch command (editor is config.EditorCmd()).
 func (s *EditSession) Command(editor string) *exec.Cmd {
 	return exec.Command("sh", "-c", editor+` "$1"`, "platui-edit", s.Path)
 }
 
-// Result читает файл, отбрасывает строки-подсказки и обрезает края.
+// Result reads the file, drops the hint lines and trims the edges.
 func (s *EditSession) Result() (string, error) {
 	b, err := os.ReadFile(s.Path)
 	if err != nil {
@@ -69,7 +69,7 @@ func (s *EditSession) Result() (string, error) {
 	return out, nil
 }
 
-// Close удаляет временный файл.
+// Close removes the temp file.
 func (s *EditSession) Close() error {
 	if err := os.Remove(s.Path); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("remove temp file: %w", err)

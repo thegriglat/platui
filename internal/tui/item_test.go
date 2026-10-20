@@ -17,7 +17,7 @@ func openCard(t *testing.T, m *model, id string) {
 	t.Helper()
 	it, ok := m.s.itemByID(id)
 	if !ok {
-		t.Fatalf("нет задачи %s", id)
+		t.Fatalf("no task %s", id)
 	}
 	feed(t, m, pushMsgOf(t, openItem(m.s, it)))
 	if m.top().Scope() != "item" {
@@ -30,7 +30,7 @@ func pushMsgOf(t *testing.T, c tea.Cmd) tea.Msg {
 	return c()
 }
 
-// settle прогоняет два тика превью: комментарии запрашиваются, когда выбор стабилен.
+// settle runs two preview ticks: comments are requested once the selection is stable.
 func settle(t *testing.T, m *model) {
 	t.Helper()
 	feed(t, m, previewTickMsg{})
@@ -43,7 +43,7 @@ func widths(t *testing.T, v string, w int) {
 	t.Helper()
 	for _, l := range strings.Split(v, "\n") {
 		if lipgloss.Width(l) > w {
-			t.Fatalf("строка шире %d: %q", w, l)
+			t.Fatalf("line wider than %d: %q", w, l)
 		}
 	}
 }
@@ -58,7 +58,7 @@ func TestContractTUIItemRender(t *testing.T) {
 		v := view(m)
 		widths(t, v, w)
 		if w >= wideWidth && (!strings.Contains(v, "desc") || !strings.Contains(v, "Anna") || !strings.Contains(v, "hello")) {
-			t.Fatalf("превью %d: %s", w, v)
+			t.Fatalf("preview %d: %s", w, v)
 		}
 	}
 	resize(t, m, 40, 30)
@@ -68,13 +68,13 @@ func TestContractTUIItemRender(t *testing.T) {
 	widths(t, v, 40)
 	for _, want := range []string{"PROJ-1", "Task number 1", "Backlog", "low", "Me", "desc", "Anna", "hello", "comment"} {
 		if !strings.Contains(v, want) {
-			t.Errorf("нет %q:\n%s", want, v)
+			t.Errorf("missing %q:\n%s", want, v)
 		}
 	}
 	press(t, m, "down", "pgdown", "end", "home", "up", "pgup")
 	press(t, m, "esc")
 	if m.top().Scope() != "main" || m.s.openItem != "" {
-		t.Fatal("esc не закрыл карточку")
+		t.Fatal("esc did not close the card")
 	}
 }
 
@@ -86,12 +86,12 @@ func TestContractTUIItemNoColor(t *testing.T) {
 	openCard(t, m, "i1")
 	settle(t, m)
 	if v := view(m); strings.Contains(v, "\x1b[3") || strings.Contains(v, "\x1b[4") || !strings.Contains(v, "desc") {
-		t.Fatalf("цвета при NoColor: %q", v)
+		t.Fatalf("colors with NoColor: %q", v)
 	}
 	m2, _, _, _ := newTestModel(t)
 	openCard(t, m2, "i1")
 	if !strings.Contains(view(m2), "\x1b[") {
-		t.Fatal("нет цвета")
+		t.Fatal("no color")
 	}
 }
 
@@ -104,7 +104,7 @@ func TestContractTUIItemHighlight(t *testing.T) {
 	m.s.cursor = "i5"
 	v := view(m)
 	if !strings.Contains(v, "\x1b[1;4;38;2") || strings.Contains(v, "login page") && !strings.Contains(v, "\x1b[0m page") {
-		t.Fatalf("совпадения не подсвечены: %q", v)
+		t.Fatalf("matches not highlighted: %q", v)
 	}
 	if got := highlight(m.s, "abc", nil); got != "abc" {
 		t.Fatal(got)
@@ -125,52 +125,52 @@ func TestContractTUIItemPatches(t *testing.T) {
 	m.s.cursor = "i1"
 	pressD(t, m, "s")
 	if m.top().Scope() != "dialog" {
-		t.Fatal("нет пикера состояния")
+		t.Fatal("no state picker")
 	}
 	pressD(t, m, "down", "enter")
 	if m.top().Scope() != "main" || m.patchOf(t, "i1").StateID != "s2" {
-		t.Fatalf("состояние: %+v %s", m.patchOf(t, "i1"), view(m))
+		t.Fatalf("state: %+v %s", m.patchOf(t, "i1"), view(m))
 	}
 	pressD(t, m, "p", "esc")
 	if m.top().Scope() != "main" || m.patchOf(t, "i1").Priority != "low" {
-		t.Fatal("esc в пикере")
+		t.Fatal("esc in the picker")
 	}
 	pressD(t, m, "p", "down", "enter")
 	if m.patchOf(t, "i1").Priority != "high" {
-		t.Fatalf("приоритет: %+v", m.patchOf(t, "i1"))
+		t.Fatalf("priority: %+v", m.patchOf(t, "i1"))
 	}
 	m.s.cursor = "i2"
 	pressD(t, m, "a")
 	if got := m.patchOf(t, "i2").AssigneeIDs; len(got) != 1 || got[0] != "u-me" {
-		t.Fatalf("назначение: %v", got)
+		t.Fatalf("assignment: %v", got)
 	}
 	n := len(api.Calls)
 	pressD(t, m, "a")
-	if len(api.Calls) != n || !strings.Contains(m.s.status.text, "уже") {
-		t.Fatalf("повторное назначение: %q", m.s.status.text)
+	if len(api.Calls) != n || !strings.Contains(m.s.status.text, "already") {
+		t.Fatalf("repeated assignment: %q", m.s.status.text)
 	}
 	calls := strings.Join(api.Calls, " ")
 	if strings.Count(calls, "UpdateWorkItem:p1:i1") != 2 || !strings.Contains(calls, "UpdateWorkItem:p1:i2") {
 		t.Fatalf("calls: %v", api.Calls)
 	}
-	// из полной карточки
+	// from the full card
 	openCard(t, m, "i3")
 	pressD(t, m, "p", "enter")
 	if m.patchOf(t, "i3").Priority != "urgent" || m.top().Scope() != "item" {
-		t.Fatalf("из карточки: %+v", m.patchOf(t, "i3"))
+		t.Fatalf("from the card: %+v", m.patchOf(t, "i3"))
 	}
-	// метки: пикер общего использования
+	// labels: a shared picker
 	var got plane.Label
 	pushed := pickLabel(m.s, func(l plane.Label) { got = l })
 	feed(t, m, pushScreenMsg{pushed})
 	pressD(t, m, "down", "enter")
 	if got.ID != "l2" {
-		t.Fatalf("метка: %+v", got)
+		t.Fatalf("label: %+v", got)
 	}
 	m.s.cursor = ""
 	pressD(t, m, "esc", "s")
 	if !m.s.status.isErr {
-		t.Fatal("нет ошибки без задачи")
+		t.Fatal("no error without a task")
 	}
 }
 
@@ -186,7 +186,7 @@ func TestContractTUIItemOpenCopy(t *testing.T) {
 	}
 	pressD(t, m, "y")
 	if m.top().Scope() != "dialog" || !strings.Contains(view(m), "Markdown") {
-		t.Fatal("нет меню копирования")
+		t.Fatal("no copy menu")
 	}
 	pressD(t, m, "u")
 	if len(copied) != 1 || copied[0] != opened[0] || m.top().Scope() != "main" {
@@ -200,12 +200,12 @@ func TestContractTUIItemOpenCopy(t *testing.T) {
 	}
 	pressD(t, m, "y", "b")
 	if len(copied) != 5 || copied[4] != "PROJ-1-task-number-1" {
-		t.Fatalf("ветка: %v %+v", copied, m.s.status)
+		t.Fatalf("branch: %v %+v", copied, m.s.status)
 	}
 	m.s.deps.OpenURL = func(string) error { return errTest }
 	pressD(t, m, "O")
 	if !m.s.status.isErr {
-		t.Fatal("ошибка браузера")
+		t.Fatal("browser error")
 	}
 }
 
@@ -215,7 +215,7 @@ type testErr struct{}
 
 func (*testErr) Error() string { return "boom" }
 
-// syncExec подменяет ExecProcess: команда редактора выполняется сразу.
+// syncExec replaces ExecProcess: the editor command runs immediately.
 func syncExec(t *testing.T) {
 	t.Helper()
 	old := runEditor
@@ -232,31 +232,31 @@ func TestContractTUIItemEdit(t *testing.T) {
 	m.s.cursor = "i1"
 	press(t, m, "e")
 	if d := m.patchOf(t, "i1").DescHTML; !strings.Contains(d, "<strong>text</strong>") {
-		t.Fatalf("описание: %q", d)
+		t.Fatalf("description: %q", d)
 	}
 	press(t, m, "c")
 	cs := e.api.CommentsV["i1"]
 	if len(cs) != 1 || !strings.Contains(cs[0].HTML, "new") || e.count("CreateComment:p1:i1") != 1 {
-		t.Fatalf("комментарий: %+v", cs)
+		t.Fatalf("comment: %+v", cs)
 	}
-	// пустая правка — отмена
+	// an empty edit cancels
 	m.s.deps.Config.Editor = `true`
 	press(t, m, "c")
-	if e.count("CreateComment") != 1 || !strings.Contains(m.s.status.text, "отмен") {
-		t.Fatalf("пустой: %q", m.s.status.text)
+	if e.count("CreateComment") != 1 || !strings.Contains(m.s.status.text, "cancel") {
+		t.Fatalf("empty: %q", m.s.status.text)
 	}
-	// падение редактора
+	// editor failure
 	m.s.deps.Config.Editor = `false`
 	press(t, m, "e")
 	if !m.s.status.isErr {
-		t.Fatal("ошибка редактора")
+		t.Fatal("editor error")
 	}
-	// из полной карточки
+	// from the full card
 	m.s.deps.Config.Editor = `printf 'second\n' >`
 	openCard(t, m, "i2")
 	press(t, m, "c")
 	if e.count("CreateComment:p1:i2") != 1 {
-		t.Fatal("комментарий из карточки")
+		t.Fatal("comment from the card")
 	}
 }
 
@@ -264,23 +264,23 @@ func TestContractTUIItemTimer(t *testing.T) {
 	m, api, _, _ := newTestModel(t)
 	m.s.cursor = "i1"
 	press(t, m, "t")
-	if _, ok := m.s.timerOf("i1"); !ok || !strings.Contains(m.s.status.text, "запущен") {
-		t.Fatalf("старт: %q", m.s.status.text)
+	if _, ok := m.s.timerOf("i1"); !ok || !strings.Contains(m.s.status.text, "started") {
+		t.Fatalf("start: %q", m.s.status.text)
 	}
 	if v := view(m); !strings.Contains(v, "⏱") {
-		t.Fatalf("нет таймера в превью: %s", v)
+		t.Fatalf("no timer in the preview: %s", v)
 	}
 	press(t, m, "t")
-	if len(api.CommentsV["i1"]) != 1 || !strings.Contains(api.CommentsV["i1"][0].HTML, "Затрачено") {
-		t.Fatalf("комментарий о времени: %+v", api.CommentsV["i1"])
+	if len(api.CommentsV["i1"]) != 1 || !strings.Contains(api.CommentsV["i1"][0].HTML, "Time spent") {
+		t.Fatalf("time comment: %+v", api.CommentsV["i1"])
 	}
-	if _, ok := m.s.timerOf("i1"); ok || !strings.Contains(m.s.status.text, "комментарий") {
-		t.Fatalf("стоп: %q", m.s.status.text)
+	if _, ok := m.s.timerOf("i1"); ok || !strings.Contains(m.s.status.text, "comment") {
+		t.Fatalf("stop: %q", m.s.status.text)
 	}
 	api.Err["CreateComment"] = errTest
 	press(t, m, "t", "t")
 	if _, ok := m.s.timerOf("i1"); !ok || !m.s.status.isErr {
-		t.Fatalf("таймер должен остаться: %q", m.s.status.text)
+		t.Fatalf("timer must stay: %q", m.s.status.text)
 	}
 }
 
@@ -289,7 +289,7 @@ func TestContractTUIItemLoad(t *testing.T) {
 	m.s.cursor = "i3"
 	feed(t, m, previewTickMsg{})
 	if e.count("Comments") != 0 {
-		t.Fatal("загрузка без стабильного выбора")
+		t.Fatal("loading without a stable selection")
 	}
 	feed(t, m, previewTickMsg{})
 	feed(t, m, previewTickMsg{})

@@ -13,16 +13,16 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// Changes — отличия двух снимков списка задач (по ID).
+// Changes are the differences between two task list snapshots (by ID).
 type Changes struct {
 	New, Updated []plane.WorkItem
 	Removed      []string
 }
 
-// Empty — изменений нет.
+// Empty reports no changes.
 func (c Changes) Empty() bool { return len(c.New) == 0 && len(c.Updated) == 0 && len(c.Removed) == 0 }
 
-// Diff сравнивает снимки; Updated — UpdatedAt изменился.
+// Diff compares snapshots; Updated means UpdatedAt changed.
 func Diff(old, cur []plane.WorkItem) Changes {
 	var c Changes
 	prev := make(map[string]plane.WorkItem, len(old))
@@ -50,7 +50,7 @@ func Diff(old, cur []plane.WorkItem) Changes {
 
 func (a *App) itemsKey(projectID string) string { return a.key("items", projectID) }
 
-// CachedItems — задачи из памяти, иначе с диска; время сохранения.
+// CachedItems returns tasks from memory, otherwise from disk, with the save time.
 func (a *App) CachedItems(projectID string) ([]plane.WorkItem, time.Time, bool) {
 	a.mu.Lock()
 	if its, ok := a.items[projectID]; ok {
@@ -71,14 +71,14 @@ func (a *App) CachedItems(projectID string) ([]plane.WorkItem, time.Time, bool) 
 	return its, at, true
 }
 
-// commitItems — полный список: обновляет и время.
+// commitItems commits the full list: updates the time too.
 func (a *App) commitItems(projectID string, cur []plane.WorkItem) {
 	now := a.d.Now()
 	a.storeItems(projectID, cur, now)
 	a.save(a.key("itemsat", projectID), now)
 }
 
-// storeItems сохраняет список с заданным временем (правка одной задачи его не меняет).
+// storeItems saves the list with the given time (editing one task does not change it).
 func (a *App) storeItems(projectID string, cur []plane.WorkItem, at time.Time) {
 	a.mu.Lock()
 	a.items[projectID] = slices.Clone(cur)
@@ -87,8 +87,8 @@ func (a *App) storeItems(projectID string, cur []plane.WorkItem, at time.Time) {
 	a.save(a.itemsKey(projectID), cur)
 }
 
-// RefreshItems загружает задачи, считает отличия от прошлого снимка (память,
-// иначе кэш) и сохраняет. Прошлого снимка нет — Changes пусто.
+// RefreshItems loads tasks, computes the differences from the previous snapshot (memory,
+// otherwise cache) and saves. No previous snapshot: Changes is empty.
 func (a *App) RefreshItems(ctx context.Context, projectID string) ([]plane.WorkItem, Changes, error) {
 	cur, err := a.d.API.WorkItems(ctx, projectID)
 	if err != nil {
@@ -103,7 +103,7 @@ func (a *App) RefreshItems(ctx context.Context, projectID string) ([]plane.WorkI
 	return cur, ch, nil
 }
 
-// Reload — обновление в обход кэша; ошибка не трогает прежние данные.
+// Reload refreshes bypassing the cache; an error leaves the previous data untouched.
 func (a *App) Reload(ctx context.Context, projectID string) (Meta, []plane.WorkItem, Changes, error) {
 	m, err := a.fetchMeta(ctx, projectID)
 	if err != nil {
@@ -123,7 +123,7 @@ func (a *App) Reload(ctx context.Context, projectID string) (Meta, []plane.WorkI
 	return m, cur, ch, nil
 }
 
-// NextPoll — интервал следующего опроса: при ошибке удваивается (429 — до 10m, иное — до 5m).
+// NextPoll is the next polling interval: doubles on error (429 up to 10m, otherwise up to 5m).
 func NextPoll(base, prev time.Duration, err error) time.Duration {
 	if err == nil {
 		return base
@@ -135,7 +135,7 @@ func NextPoll(base, prev time.Duration, err error) time.Duration {
 	return min(max(prev, base)*2, limit)
 }
 
-// Find ищет задачу по ключу проекта и номеру.
+// Find looks up a task by project key and number.
 func (a *App) Find(ctx context.Context, identifier string, seq int) (plane.Project, plane.WorkItem, error) {
 	p, err := a.Project(ctx, identifier)
 	if err != nil {
@@ -158,7 +158,7 @@ func (a *App) Find(ctx context.Context, identifier string, seq int) (plane.Proje
 	return p, it, err
 }
 
-// ParseRef разбирает "PROJ-42", "proj-42" или "42" (с defaultProject).
+// ParseRef parses "PROJ-42", "proj-42" or "42" (with defaultProject).
 func ParseRef(s, defaultProject string) (identifier string, seq int, ok bool) {
 	s = strings.TrimSpace(s)
 	id, num := defaultProject, s
@@ -172,7 +172,7 @@ func ParseRef(s, defaultProject string) (identifier string, seq int, ok bool) {
 	return strings.ToUpper(id), n, true
 }
 
-// CurrentItem — задача, на которую указывает текущая ветка.
+// CurrentItem is the task the current branch points to.
 func (a *App) CurrentItem(ctx context.Context) (plane.Project, plane.WorkItem, error) {
 	g, err := a.git()
 	if err != nil {

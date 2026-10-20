@@ -1,5 +1,5 @@
-// Package runner запускает shell-команды пользователя (контракт C11 v1).
-// Листовой пакет: не зависит от других пакетов platui.
+// Package runner runs the user's shell commands (contract C11 v1).
+// A leaf package: it does not depend on other platui packages.
 package runner
 
 import (
@@ -12,24 +12,24 @@ import (
 	"time"
 )
 
-// Result — итог запуска.
+// Result is the outcome of a run.
 type Result struct {
 	Stdout, Stderr string
 	ExitCode       int
 }
 
-// Shell запускает `sh -c command` в каталоге dir с дополнительным env.
-// Ошибка — только если команду не удалось запустить (или ctx отменён);
-// ненулевой код выхода — в ExitCode.
+// Shell runs `sh -c command` in directory dir with extra env.
+// An error is returned only if the command could not be started (or ctx was
+// canceled); a non-zero exit code goes into ExitCode.
 type Shell func(ctx context.Context, dir, command string, env []string) (Result, error)
 
-// Default — реализация на os/exec: cwd=dir, env = os.Environ()+env.
+// Default is the os/exec implementation: cwd=dir, env = os.Environ()+env.
 func Default() Shell {
 	return func(ctx context.Context, dir, command string, env []string) (Result, error) {
 		cmd := exec.CommandContext(ctx, "sh", "-c", command)
 		cmd.Dir = dir
 		cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-		cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) } // вся группа, включая детей sh
+		cmd.Cancel = func() error { return syscall.Kill(-cmd.Process.Pid, syscall.SIGKILL) } // the whole group, including sh's children
 		cmd.WaitDelay = time.Second
 		cmd.Env = append(os.Environ(), env...)
 		var out, errb bytes.Buffer

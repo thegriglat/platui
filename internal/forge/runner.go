@@ -10,11 +10,11 @@ import (
 	"strings"
 )
 
-// Runner — запуск внешней команды с дополнительными переменными окружения.
-// Ошибка содержит stderr; stdout возвращается всегда.
+// Runner runs an external command with extra environment variables.
+// The error contains stderr; stdout is always returned.
 type Runner func(ctx context.Context, dir string, env []string, name string, args ...string) (stdout string, err error)
 
-// ExecRunner запускает команды через os/exec с LC_ALL=C и env.
+// ExecRunner runs commands via os/exec with LC_ALL=C and env.
 func ExecRunner() Runner {
 	return func(ctx context.Context, dir string, env []string, name string, args ...string) (string, error) {
 		cmd := exec.CommandContext(ctx, name, args...)

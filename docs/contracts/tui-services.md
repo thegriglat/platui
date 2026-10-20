@@ -204,7 +204,7 @@ type StartResult struct {
 }
 func (a *App) Start(ctx, p plane.Project, it plane.WorkItem, o StartOptions) (StartResult, error)
 ```
-v5 (2026-10-20, подтверждение деструктивных): в шаге (2) `Start` сообщение коммита пишется только если файла для ветки нет (`gitbranch.ReadCommitMsg` → ok=false) или его текст совпадает; иначе не перезаписывается и Warning «сообщение коммита для <ветки> уже есть — не перезаписано».
+v5 (2026-10-20, подтверждение деструктивных): в шаге (2) `Start` сообщение коммита пишется только если файла для ветки нет (`gitbranch.ReadCommitMsg` → ok=false) или его текст совпадает; иначе не перезаписывается и Warning «commit message for <branch> already exists — not overwritten».
 `Start`: (1) git: worktree → `AddWorktree(name, gitbranch.WorktreePath(cfg.Branch.WorktreeDir, top, name), {Base, Checkout})`, иначе `Create`; `ErrBranchExists` → `Switch` (с `cfg.Branch.Checkout`); ошибка git — возврат без изменений в Plane; (2) `WriteCommitMsg(name, CommitMessage(cfg.Branch.CommitTemplate, …))` и `InstallHook()`; `ErrHookExists` → Warning; (3) один `UpdateWorkItem`: состояние — `cfg.Workflow.StartState` по имени (без учёта регистра), иначе первое из `Meta.States` с группой `started`; не найдено или уже такое — не отправлять; исполнители — добавить `Me().ID`, если нет; патч пуст — запроса нет. Ошибка API после git — `StartResult` с заполненным `Branch` и ошибка.
 
 ```go
@@ -225,7 +225,7 @@ func (a *App) CachedMRs(itemID string) ([]forge.MR, bool)                       
 type Timer struct{ ProjectID, ItemID string; Started time.Time }
 func (a *App) StartTimer(projectID, itemID string) error              // уже идёт — no-op
 func (a *App) Timers() []Timer                                        // по Started
-func (a *App) StopTimer(ctx, projectID, itemID, note string) (time.Duration, error) // нет → ErrNoTimer; длительность округлена до минуты вверх, ≥ 1m; комментарий "<p>Затрачено: 1h 25m</p>" + MarkdownToHTML(note); таймер удаляется только после успешного комментария
+func (a *App) StopTimer(ctx, projectID, itemID, note string) (time.Duration, error) // нет → ErrNoTimer; длительность округлена до минуты вверх, ≥ 1m; комментарий "<p>Time spent: 1h 25m</p>" + MarkdownToHTML(note); таймер удаляется только после успешного комментария
 func FormatDuration(d time.Duration) string                           // "1h 25m", "45m"
 
 // Строка для промпта/tmux: только кэш и git, без сети; нет данных — "".
@@ -268,9 +268,9 @@ func Highlight(s string, pos []int, mark func(string) string) string // подр
 Производительность (порог приёмки): `BenchmarkSearch5000` — 5000 документов (заголовки 3–10 слов из словаря ~200 слов латиницей и кириллицей, seed фиксирован), запрос из 2 слов — ≤ 10 мс/op; `BenchmarkNew5000` — ≤ 50 мс/op; `BenchmarkFuzzyLong3000`/`9000` (текст 3000/9000 рун без подстроки шаблона, разреженное совпадение, шаблон 32 руны) — ≤ 2 мс/op.
 Контрактный тест: `internal/search/contract_test.go`, `TestContractSearch*`: И по словам; подряд идущее совпадение выше разреженного и начало слова выше середины (как ранжирует fzf); `Fuzzy` совпадает с прямым вызовом `algo.FuzzyMatchV2` на таблице примеров (оценка и позиции); кириллица и регистр; точные `Pos` (сравнение срезов); `Highlight`; пустой запрос; `ParseKey` (PROJ-42, proj-42, 42, #42, мусор) и что `Search` для них → nil; `Lookup` с identifier и без; `MaxQuery` (40 рун ≡ первые 32); стабильность порядка при равных оценках.
 
-## C10. cli v4 — пакет internal/cli и cmd/platui (PT-10; v2 — подтверждение деструктивных действий; v3 — todo; v4 — коды выхода; дельта в docs/contracts/tui-features.md)
+## C10. cli v4 — пакет internal/cli и main.go (PT-10; v2 — подтверждение деструктивных действий; v3 — todo; v4 — коды выхода; дельта в docs/contracts/tui-features.md)
 
-Режим без интерфейса и сборка бинаря. `internal/cli` → app, config, plane, gitbranch, text, search (не импортирует `tui`); `cmd/platui/main.go` — только сборка зависимостей (C0).
+Режим без интерфейса и сборка бинаря. `internal/cli` → app, config, plane, gitbranch, text, search (не импортирует `tui`); `main.go` — только сборка зависимостей (C0).
 
 ```go
 type Env struct {
@@ -293,11 +293,11 @@ func Run(ctx context.Context, args []string, env Env) int // код выхода
 | `branch [<ref>] [--print] [--worktree]` | имя по шаблону; `--print` — только напечатать; иначе создать/переключиться (`Create`, при `ErrBranchExists` — `Switch`; `--worktree` — `AddWorktree`); без `ref` — ошибка использования |
 | `start <ref> [--worktree]` | `app.Start`; вывод: ветка, состояние, назначение, предупреждения |
 | `review [<ref>]` | `app.Review`; без `ref` — задача текущей ветки (`CurrentItem`); вывод: URL MR, состояние, предупреждения |
-| `mr [<ref>] [--open] [--json]` | v3 «Go to MR»: `app.MRs(fresh=true)`; без `ref` — задача текущей ветки; вывод: `!IID  state  title  url` по строке; `--open` — один MR → открыть в браузере (`github.com/cli/browser`), несколько — список и код 0 без открытия (выбор — в TUI), нет — «MR не найдены», код 1 |
+| `mr [<ref>] [--open] [--json]` | v3 «Go to MR»: `app.MRs(fresh=true)`; без `ref` — задача текущей ветки; вывод: `!IID  state  title  url` по строке; `--open` — один MR → открыть в браузере (`github.com/cli/browser`), несколько — список и код 0 без открытия (выбор — в TUI), нет — «no MRs found», код 1 |
 | `prompt [--format <шаблон>]` | `app.Prompt()` без сети (по умолчанию `{key} {state}`; плейсхолдеры `{key}`, `{state}`, `{title}`); нет данных или любая ошибка (в т.ч. загрузки конфига) — пустой вывод, код 0 всегда, ничего в stderr; сеть не используется |
 | `hook install` | `InstallHook`; `ErrHookExists` — сообщение и код 1 |
 | `version` | `platui <версия>` (`var Version = "dev"`, задаётся `-ldflags`) |
 
-Деструктивные действия (v2, решение пользователя 2026-10-20; список — C4 v5 «Подтверждение»): только после вопроса в терминале `… [y/N]` (по умолчанию «нет»); stdin не TTY — отказ (код 1, «нужно подтверждение: --yes») без глобального флага `--yes`. Сейчас деструктивных подкоманд нет: `start` не перезаписывает существующее сообщение коммита (C5 v5), `hook install` не трогает чужой хук; новая деструктивная подкоманда — только с этим правилом и тестом (`TestContractCLIConfirm*`). Глобальный флаг `--yes` и хелпер `confirm(env, question) (bool, error)` (Env + `Stdin io.Reader`, `IsTTY func() bool`) — добавить сейчас (PT-30), чтобы правило было исполняемым.
+Деструктивные действия (v2, решение пользователя 2026-10-20; список — C4 v5 «Подтверждение»): только после вопроса в терминале `… [y/N]` (по умолчанию «нет»); stdin не TTY — отказ (код 1, «confirmation required: --yes») без глобального флага `--yes`. Сейчас деструктивных подкоманд нет: `start` не перезаписывает существующее сообщение коммита (C5 v5), `hook install` не трогает чужой хук; новая деструктивная подкоманда — только с этим правилом и тестом (`TestContractCLIConfirm*`). Глобальный флаг `--yes` и хелпер `confirm(env, question) (bool, error)` (Env + `Stdin io.Reader`, `IsTTY func() bool`) — добавить сейчас (PT-30), чтобы правило было исполняемым.
 Коды выхода: 0 — успех; 1 — ошибка выполнения (`platui: <текст>` в stderr); 2 — ошибка использования (неизвестная подкоманда/флаг, нет аргумента; краткая справка в stderr). `-h`/`--help` у корня и подкоманд — справка в stdout, код 0. Разбор — `github.com/spf13/cobra` v1.10.2 (ответ пользователя на Q3; флаги допускаются после аргументов: `show PROJ-42 --json`); `SilenceUsage`/`SilenceErrors`, коды выхода — как выше (ошибки разбора флагов/аргументов → 2, через `FlagErrorFunc` и `Args`-валидаторы); автодополнение cobra (`completion`) — оставить встроенным.
-Контрактный тест: `internal/cli/contract_test.go`, `TestContractCLI*`: каждая подкоманда на фейках (`Build` возвращает `app.New` на planetest/gitbranchtest/forgetest/cache.Mem), JSON-поля `ls`/`show`, коды 0/1/2, `prompt` без сети и без ключа, без подкоманды вызывается `RunTUI` с `StartAt`. `cmd/platui`: `go build` и `go vet`; тест `TestMainWiring` не нужен.
+Контрактный тест: `internal/cli/contract_test.go`, `TestContractCLI*`: каждая подкоманда на фейках (`Build` возвращает `app.New` на planetest/gitbranchtest/forgetest/cache.Mem), JSON-поля `ls`/`show`, коды 0/1/2, `prompt` без сети и без ключа, без подкоманды вызывается `RunTUI` с `StartAt`. `main.go`: `go build` и `go vet`; тест `TestMainWiring` не нужен.

@@ -13,10 +13,10 @@ import (
 var groupOrder = []string{"backlog", "unstarted", "started", "completed", "cancelled"}
 
 func groupRank(g string) int {
-	return slices.Index(groupOrder, strings.ToLower(g)) // неизвестная → -1, перед backlog
+	return slices.Index(groupOrder, strings.ToLower(g)) // unknown → -1, before backlog
 }
 
-// StateTabs — состояния для табов (C1 v3).
+// StateTabs returns the states for tabs (C1 v3).
 func StateTabs(cfg *config.Config, states []plane.State) []plane.State {
 	var out []plane.State
 	if len(cfg.Tabs.States) > 0 {
@@ -51,7 +51,7 @@ func StateTabs(cfg *config.Config, states []plane.State) []plane.State {
 	return out
 }
 
-// SearchDocs готовит документы для локального поиска (C9 v4): только ID, ключ и заголовок.
+// SearchDocs prepares documents for local search (C9 v4): only ID, key and title.
 func SearchDocs(m Meta, items []plane.WorkItem) []search.Doc {
 	docs := make([]search.Doc, 0, len(items))
 	for _, it := range items {
@@ -60,13 +60,13 @@ func SearchDocs(m Meta, items []plane.WorkItem) []search.Doc {
 	return docs
 }
 
-// ServerSearch — серверный поиск (до 50 результатов); projectID пусто — весь workspace.
+// ServerSearch is a server-side search (up to 50 results); empty projectID means the whole workspace.
 func (a *App) ServerSearch(ctx context.Context, query, projectID string) ([]plane.SearchHit, error) {
 	return a.d.API.Search(ctx, query, projectID, 50)
 }
 
-// Match проверяет задачу по сохранённому фильтру: критерии через И, значения внутри списка — ИЛИ.
-// Поле Project фильтра вызывающий применяет сам (выбор проекта).
+// Match checks a task against a saved filter: criteria are ANDed, values within a list are ORed.
+// The caller applies the filter's Project field itself (project selection).
 func Match(f config.Filter, it plane.WorkItem, m Meta, meID string) bool {
 	if f.Project != "" && !strings.EqualFold(strings.TrimSpace(f.Project), m.Project.Identifier) {
 		return false

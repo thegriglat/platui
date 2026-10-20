@@ -6,14 +6,14 @@ import (
 	"github.com/thegriglat/platui/internal/config"
 )
 
-// model — корневая модель: стек экранов, глобальные клавиши, маршрутизация сообщений.
+// model is the root model: screen stack, global keys, message routing.
 type model struct {
 	s       *session
 	stack   []screen
 	lastKey tea.KeyMsg
 }
 
-// New создаёт корневую модель.
+// New creates the root model.
 func New(d Deps) tea.Model { return newModel(d) }
 
 func newModel(d Deps) *model {
@@ -21,15 +21,15 @@ func newModel(d Deps) *model {
 	return &model{s: s, stack: []screen{newMainScreen(s)}}
 }
 
-// Run запускает программу в альтернативном экране.
+// Run runs the program on the alternate screen.
 func Run(d Deps) error {
 	m := newModel(d)
-	defer m.s.cancel() // выход из программы отменяет выполняющиеся команды
+	defer m.s.cancel() // quitting cancels running commands
 	_, err := tea.NewProgram(m, programOptions(m.s.deps.Config)...).Run()
 	return err
 }
 
-// programOptions — опции программы: альтернативный экран, мышь — при ui.mouse (по умолчанию да).
+// programOptions are the program options: alternate screen, mouse when ui.mouse is set (default yes).
 func programOptions(cfg *config.Config) []tea.ProgramOption {
 	opts := []tea.ProgramOption{tea.WithAltScreen()}
 	if cfg.MouseEnabled() {
@@ -69,7 +69,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyMsg:
 		return m, m.key(msg)
 	case tea.MouseMsg:
-		// мышь — только верхнему экрану; диалоги и оверлеи её игнорируют
+		// mouse goes to the top screen only; dialogs and overlays ignore it
 		if ms, ok := m.top().(*mainScreen); ok {
 			return m, ms.mouse(m.s, msg)
 		}
@@ -82,7 +82,7 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, nil
 	}
 	if _, ok := msg.(openProjectMsg); ok {
-		// смена проекта закрывает карточку прежнего проекта
+		// switching the project closes the card of the previous project
 		for len(m.stack) > 1 && m.top().Scope() == "item" {
 			m.pop()
 		}
@@ -96,8 +96,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
-// key: Ctrl+C всегда выходит; экран с вводом получает клавиши сам; иначе — действие
-// по реестру для области экрана, иначе клавишу получает экран.
+// key: Ctrl+C always quits; a screen with input gets keys itself; otherwise the action
+// from the registry for the screen scope, otherwise the screen gets the key.
 func (m *model) key(k tea.KeyMsg) tea.Cmd {
 	name := keyName(k)
 	if name == "ctrl+c" {
@@ -118,7 +118,7 @@ func (m *model) key(k tea.KeyMsg) tea.Cmd {
 	return cmd
 }
 
-// forward передаёт последнюю клавишу текущему экрану.
+// forward passes the last key to the current screen.
 func (m *model) forward() tea.Cmd {
 	var cmd tea.Cmd
 	m.stack[len(m.stack)-1], cmd = m.top().Update(m.s, m.lastKey)

@@ -15,19 +15,19 @@ func TestContractTUIV6DiffStat(t *testing.T) {
 	e.git.BranchesV["PROJ-1-task-number-1"] = gitbranch.BranchStatus{Name: "PROJ-1-task-number-1", Local: true}
 	e.git.Stats = map[string]gitbranch.Stat{"PROJ-1-task-number-1": {Files: 3, Insertions: 12, Deletions: 4}}
 	m.s.cursor = "i1"
-	if strings.Contains(view(m), "Ветка: +") {
+	if strings.Contains(view(m), "Branch: +") {
 		t.Fatal("stat before load")
 	}
 	send(t, m, previewTickMsg{})
 	send(t, m, previewTickMsg{})
-	if v := view(m); !strings.Contains(v, "Ветка: +12 −4 (3 файла)") {
+	if v := view(m); !strings.Contains(v, "Branch: +12 −4 (3 files)") {
 		t.Fatalf("no stat line:\n%s", v)
 	}
-	// задача без ветки — строки нет
+	// task without a branch — no line
 	m.s.cursor = "i2"
 	send(t, m, previewTickMsg{})
 	send(t, m, previewTickMsg{})
-	if v := view(m); strings.Contains(v, "Ветка: +") {
+	if v := view(m); strings.Contains(v, "Branch: +") {
 		t.Fatalf("stat for item without branch:\n%s", v)
 	}
 }
@@ -46,7 +46,7 @@ func TestContractTUIV6Bookmarks(t *testing.T) {
 	if v := view(m); !strings.Contains(v, "☆ PROJ-3") {
 		t.Fatalf("no star:\n%s", v)
 	}
-	// поиск — закладки не закрепляются
+	// search — bookmarks are not pinned
 	s.setQuery("Task number 1")
 	if r := s.buildRows(map[string]bool{}); r[0].pinned {
 		t.Fatal("pinned in search")
@@ -81,7 +81,7 @@ func TestContractTUIV6Subtasks(t *testing.T) {
 		t.Fatalf("depth 2:\n%s", view(m))
 	}
 	send(t, m, tea.KeyMsg{Type: tea.KeyDown})
-	send(t, m, tea.KeyMsg{Type: tea.KeyLeft}) // на потомке — к родителю
+	send(t, m, tea.KeyMsg{Type: tea.KeyLeft}) // on a descendant — to the parent
 	if s.cursor != "i2" {
 		t.Fatalf("cursor %s", s.cursor)
 	}
@@ -89,7 +89,7 @@ func TestContractTUIV6Subtasks(t *testing.T) {
 	if strings.Contains(view(m), "Task number 4") {
 		t.Fatal("not collapsed")
 	}
-	// поиск — плоский список
+	// search — flat list
 	s.setQuery("Task number")
 	if r := s.buildRows(map[string]bool{}); len(r) == 0 || r[0].depth != 0 || r[0].kids != 0 {
 		t.Fatal("search not flat")

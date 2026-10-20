@@ -1,4 +1,4 @@
-// Package plane — клиент REST API Plane v1 (контракт C3 v6).
+// Package plane is the Plane REST API v1 client (contract C3 v6).
 package plane
 
 import (
@@ -7,19 +7,19 @@ import (
 	"time"
 )
 
-// Project — тип контракта C3.
+// Project is a contract C3 type.
 type Project struct {
 	ID, Identifier, Name string
 }
 
-// State — тип контракта C3.
+// State is a contract C3 type.
 type State struct {
 	ID, Name, Group, Color string
-	Sequence               float64 // `sequence`: число или строка с числом; иначе 0
-	Default                bool    // `default`, иначе `is_default`
+	Sequence               float64 // `sequence`: a number or a numeric string; otherwise 0
+	Default                bool    // `default`, otherwise `is_default`
 }
 
-// SearchHit — элемент серверного поиска.
+// SearchHit is a server search element.
 type SearchHit struct {
 	ID, Name          string
 	Sequence          int
@@ -31,7 +31,7 @@ type Member struct {
 	ID, DisplayName, Email, FirstName, LastName string
 }
 
-// Name — DisplayName, иначе "First Last", иначе Email.
+// Name is DisplayName, otherwise "First Last", otherwise Email.
 func (m Member) Name() string {
 	if m.DisplayName != "" {
 		return m.DisplayName
@@ -42,12 +42,12 @@ func (m Member) Name() string {
 	return m.Email
 }
 
-// Label — тип контракта C3.
+// Label is a contract C3 type.
 type Label struct {
 	ID, Name, Color string
 }
 
-// Comment — тип контракта C3.
+// Comment is a contract C3 type.
 type Comment struct {
 	ID        string
 	Author    string
@@ -55,7 +55,7 @@ type Comment struct {
 	CreatedAt time.Time
 }
 
-// WorkItem — тип контракта C3.
+// WorkItem is a contract C3 type.
 type WorkItem struct {
 	ID                   string
 	ProjectID            string
@@ -66,25 +66,25 @@ type WorkItem struct {
 	Priority             string
 	AssigneeIDs          []string
 	LabelIDs             []string
-	ParentID             string // родитель (подзадача), иначе ""
+	ParentID             string // parent (subtask), otherwise ""
 	CreatedAt, UpdatedAt time.Time
 }
 
-// WorkItemPatch: nil — поле не отправляется.
+// WorkItemPatch: nil means the field is not sent.
 type WorkItemPatch struct {
 	StateID, Priority, Name, DescHTML *string
 	AssigneeIDs, LabelIDs             *[]string
 }
 
-// NewWorkItem — тип контракта C3.
+// NewWorkItem is a contract C3 type.
 type NewWorkItem struct {
 	Name, DescHTML        string
-	StateID, Priority     string   // пусто — не отправляется
-	AssigneeIDs, LabelIDs []string // nil/пусто — не отправляется
-	ParentID              string   // пусто — не отправляется
+	StateID, Priority     string   // empty: not sent
+	AssigneeIDs, LabelIDs []string // nil/empty: not sent
+	ParentID              string   // empty: not sent
 }
 
-// API — тип контракта C3.
+// API is a contract C3 type.
 type API interface {
 	Me(ctx context.Context) (Member, error)
 	Projects(ctx context.Context) ([]Project, error)

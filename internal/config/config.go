@@ -49,7 +49,7 @@ type Config struct {
 	HTTP           HTTP      `yaml:"http"`
 }
 
-// ErrNoAPIKey — ключ API не задан или пуст (errors.Is).
+// ErrNoAPIKey means the API key is unset or empty (errors.Is).
 var ErrNoAPIKey = errors.New("api key is not set")
 
 func errHome(err error) error {
@@ -71,7 +71,7 @@ func DefaultPath() (string, error) {
 // Load reads and parses the config file at path.
 func Load(path string) (*Config, error) { return load(path, true) }
 
-// LoadNoKey — как Load, но без проверки и разрешения ключа API (todo, prompt).
+// LoadNoKey is like Load but skips checking and resolving the API key (todo, prompt).
 func LoadNoKey(path string) (*Config, error) { return load(path, false) }
 
 func load(path string, needKey bool) (*Config, error) {

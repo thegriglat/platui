@@ -11,7 +11,7 @@ type memItem struct {
 	data  []byte
 }
 
-// Mem — хранилище в памяти для тестов потребителей.
+// Mem is an in-memory store for consumers' tests.
 type Mem struct {
 	mu    sync.Mutex
 	now   func() time.Time
@@ -20,7 +20,7 @@ type Mem struct {
 
 var _ Store = (*Mem)(nil)
 
-// NewMem создаёт Mem; now задаёт время сохранения (nil → time.Now).
+// NewMem creates a Mem; now supplies the save time (nil → time.Now).
 func NewMem(now func() time.Time) *Mem {
 	if now == nil {
 		now = time.Now

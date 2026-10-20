@@ -9,15 +9,15 @@ import (
 
 func init() { newTable = func(s *session) pane { return &table{} } }
 
-// table — таблица задач текущего таба; курсор — s.cursor (ID задачи).
+// table is the task table of the current tab; the cursor is s.cursor (task ID).
 type table struct {
 	list     cursorList
-	expanded map[string]bool // раскрытые родители (подзадачи)
+	expanded map[string]bool // expanded parents (subtasks)
 	proj     string
 	rows     []row
 }
 
-// sync выравнивает список по строкам таблицы и положению s.cursor.
+// sync aligns the list with the table rows and the s.cursor position.
 func (t *table) sync(s *session, h int) []string {
 	id := ""
 	if s.project != nil {
@@ -48,7 +48,7 @@ func (t *table) sync(s *session, h int) []string {
 	return ids
 }
 
-// fold раскрывает (open) или сворачивает подзадачи под курсором; на потомке «←» переходит к родителю.
+// fold expands (open) or collapses the subtasks under the cursor; on a descendant "←" goes to the parent.
 func (t *table) fold(s *session, open bool) {
 	i := t.list.Pos()
 	if i >= len(t.rows) {
@@ -108,12 +108,12 @@ func (t *table) Update(s *session, msg tea.Msg) (pane, tea.Cmd) {
 func (t *table) View(s *session, width, height int) string {
 	t.sync(s, height-1)
 	if len(t.rows) == 0 {
-		msg := "нет задач"
+		msg := "no tasks"
 		switch {
 		case s.loading && !s.live:
-			msg = "загрузка…"
+			msg = "loading…"
 		case s.query != "" || s.mine || s.filter > 0:
-			msg = "нет совпадений"
+			msg = "no matches"
 		}
 		return s.st.muted.Render(msg)
 	}

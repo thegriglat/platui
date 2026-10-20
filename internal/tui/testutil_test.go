@@ -20,7 +20,7 @@ import (
 
 var t0 = time.Date(2026, 10, 20, 18, 40, 0, 0, time.UTC)
 
-// run выполняет команду, разворачивая Batch; Tick и зависшие команды (>100 мс) пропускаются.
+// run executes a command, expanding Batch; Tick and hung commands (>100 ms) are skipped.
 func run(t *testing.T, cmd tea.Cmd) []tea.Msg {
 	t.Helper()
 	if cmd == nil {
@@ -46,7 +46,7 @@ func run(t *testing.T, cmd tea.Cmd) []tea.Msg {
 	}
 }
 
-// feed подаёт сообщение и рекурсивно обрабатывает порождённые команды.
+// feed delivers a message and recursively processes the commands it spawns.
 func feed(t *testing.T, m *model, msg tea.Msg) {
 	t.Helper()
 	_, cmd := m.Update(msg)
@@ -86,7 +86,7 @@ type testEnv struct {
 	bells int
 }
 
-// newTestModel — модель с образцовым проектом PROJ (5 состояний, 2 участника, 2 метки, 12 задач).
+// newTestModel is a model with the sample project PROJ (5 states, 2 members, 2 labels, 12 tasks).
 func newTestModel(t *testing.T) (*model, *planetest.Fake, *gitbranchtest.Fake, *forgetest.Fake) {
 	m, e := newTestModelCfg(t, StartAt{Project: "PROJ"}, nil)
 	return m, e.api, e.git, e.forge

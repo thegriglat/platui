@@ -40,7 +40,7 @@ func TestContractTUIBase(t *testing.T) {
 	if s.project == nil || s.project.Identifier != "PROJ" || len(s.items) != 12 || s.me.ID != "u-me" {
 		t.Fatalf("start: %+v items=%d", s.project, len(s.items))
 	}
-	if got := len(s.tabList()); got != 5 { // Все + 4 (cancelled скрыт)
+	if got := len(s.tabList()); got != 5 { // All + 4 (cancelled hidden)
 		t.Fatalf("tabs=%d", got)
 	}
 	counts := []int{}
@@ -51,12 +51,12 @@ func TestContractTUIBase(t *testing.T) {
 		t.Fatalf("counts %v want %v", counts, want)
 	}
 	v := view(m)
-	for _, w := range []string{"PROJ", "Все 11", "Backlog 2", "In Progress 3", "Task number 1", "справка", "выход"} {
+	for _, w := range []string{"PROJ", "All 11", "Backlog 2", "In Progress 3", "Task number 1", "help", "quit"} {
 		if !strings.Contains(v, w) {
 			t.Errorf("view lacks %q:\n%s", w, v)
 		}
 	}
-	// табы: Ctrl+→, Alt+n
+	// tabs: Ctrl+→, Alt+n
 	press(t, m, "ctrl+right")
 	if s.tab != 1 || len(s.visible()) != 2 {
 		t.Fatalf("tab=%d", s.tab)
@@ -70,19 +70,19 @@ func TestContractTUIBase(t *testing.T) {
 		t.Fatalf("tab=%d", s.tab)
 	}
 	press(t, m, "alt+1")
-	// «Мои»
+	// "Mine"
 	press(t, m, "m")
-	if !s.mine || s.tabCount(0) != 6 || !strings.Contains(view(m), "[Мои]") {
+	if !s.mine || s.tabCount(0) != 6 || !strings.Contains(view(m), "[Mine]") {
 		t.Fatalf("mine: count=%d", s.tabCount(0))
 	}
 	press(t, m, "m")
-	// справка
+	// help
 	press(t, m, "?")
 	if m.top().Scope() != "help" || !strings.Contains(view(m), "Alt+1…9") {
 		t.Fatalf("help:\n%s", view(m))
 	}
-	press(t, m, "end") // справка прокручивается: «виды» в конце
-	if !strings.Contains(view(m), "Обновить из API") {
+	press(t, m, "end") // help scrolls: "views" is at the end
+	if !strings.Contains(view(m), "Refresh from API") {
 		t.Fatalf("help end:\n%s", view(m))
 	}
 	press(t, m, "h")
@@ -93,15 +93,15 @@ func TestContractTUIBase(t *testing.T) {
 	if m.top().Scope() != "main" {
 		t.Fatal("help not closed by esc")
 	}
-	// R: перезагрузка в обход кэша
+	// R: reload bypassing the cache
 	api.Mu.Lock()
 	api.ItemsV["p1"] = api.ItemsV["p1"][:10]
 	api.Mu.Unlock()
 	press(t, m, "R")
-	if len(s.items) != 10 || !strings.Contains(s.status.text, "обновлено: 10 задач, 18:40") || s.loading {
+	if len(s.items) != 10 || !strings.Contains(s.status.text, "updated: 10 tasks, 18:40") || s.loading {
 		t.Fatalf("reload: %d %q loading=%v", len(s.items), s.status.text, s.loading)
 	}
-	// q выходит
+	// q quits
 	if cmd := m.key(keyMsg("q")); cmd == nil || cmd() != tea.Quit() {
 		t.Error("q must quit")
 	}
@@ -147,7 +147,7 @@ func TestNilHooksSafe(t *testing.T) {
 	if !m.s.status.isErr || m.top().Scope() != "main" {
 		t.Fatalf("kanban nil: %+v", m.s.status)
 	}
-	if cmd := openItem(m.s, m.s.items[0]); cmd != nil || m.s.status.text != "карточка недоступна" {
+	if cmd := openItem(m.s, m.s.items[0]); cmd != nil || m.s.status.text != "card unavailable" {
 		t.Fatalf("openItem: %+v", m.s.status)
 	}
 	press(t, m, "tab", "up", "down", "pgdown", "end", "home", "x")
@@ -160,10 +160,10 @@ func TestVisibleFilters(t *testing.T) {
 	if len(s.visible()) != 1 || s.tabCount(0) != 1 || s.visible()[0].Sequence != 5 {
 		t.Fatalf("query: %v", s.visible())
 	}
-	if !strings.Contains(view(m), "найдено 1") {
+	if !strings.Contains(view(m), "found 1") {
 		t.Error("search row missing")
 	}
-	s.setQuery("PROJ-3") // ключ — фильтр не меняется
+	s.setQuery("PROJ-3") // a key leaves the filter unchanged
 	if s.hits != nil || s.tabCount(0) != 11 {
 		t.Fatal("key query changed filter")
 	}
@@ -174,7 +174,7 @@ func TestVisibleFilters(t *testing.T) {
 	s.setQuery("")
 	s.deps.Config.Filters = []config.Filter{{Name: "hi", Priorities: []string{"high"}}}
 	s.filter = 1
-	if n := s.tabCount(0); n != 2 || !strings.Contains(view(m), "[фильтр: hi]") {
+	if n := s.tabCount(0); n != 2 || !strings.Contains(view(m), "[filter: hi]") {
 		t.Fatalf("filter count %d", n)
 	}
 	s.filter = 0
@@ -245,7 +245,7 @@ func TestPoll(t *testing.T) {
 	if _, ok := m.s.fresh["i99"]; !ok || e.bells != 1 || len(m.s.items) != 13 || m.s.polling {
 		t.Fatalf("poll: fresh=%v bells=%d items=%d", m.s.fresh, e.bells, len(m.s.items))
 	}
-	if !strings.Contains(m.s.status.text, "+1 новых") {
+	if !strings.Contains(m.s.status.text, "+1 new") {
 		t.Errorf("status %q", m.s.status.text)
 	}
 	e.api.Mu.Lock()
@@ -278,7 +278,7 @@ func TestNoProject(t *testing.T) {
 	newProjects = nil
 	defer func() { newProjects = old }()
 	m, _ := newTestModelCfg(t, StartAt{}, nil)
-	if m.s.project != nil || m.s.status.text != "проект не выбран" || len(m.s.projects) != 2 {
+	if m.s.project != nil || m.s.status.text != "no project selected" || len(m.s.projects) != 2 {
 		t.Fatalf("status %+v", m.s.status)
 	}
 	newProjects = func(s *session) screen { return newHelp("projects") }
@@ -286,7 +286,7 @@ func TestNoProject(t *testing.T) {
 	if len(m.stack) != 2 {
 		t.Fatal("projects screen not pushed")
 	}
-	press(t, m, "R") // без проекта в области projects не должно паниковать
+	press(t, m, "R") // must not panic without a project in the projects scope
 }
 
 func TestBootErrors(t *testing.T) {

@@ -13,18 +13,18 @@ import (
 func init() {
 	main := []string{"main"}
 	for _, a := range []action{
-		{ID: "bulk.state", Title: "Состояние отмеченных", Group: "задача", Keys: []string{"s"}, Bulk: true, Scopes: main,
+		{ID: "bulk.state", Title: "State of marked", Group: "task", Keys: []string{"s"}, Bulk: true, Scopes: main,
 			Run: func(m *model) tea.Cmd { return bulkState(m.s) }},
-		{ID: "bulk.assign", Title: "Назначить на себя / снять (отмеченные)", Group: "задача", Keys: []string{"a"}, Bulk: true,
+		{ID: "bulk.assign", Title: "Assign to me / unassign (marked)", Group: "task", Keys: []string{"a"}, Bulk: true,
 			Scopes: main, Run: func(m *model) tea.Cmd { return bulkAssign(m.s) }},
-		{ID: "bulk.label", Title: "Метка отмеченным", Group: "задача", Keys: []string{"L"}, Bulk: true, Scopes: main,
+		{ID: "bulk.label", Title: "Label marked", Group: "task", Keys: []string{"L"}, Bulk: true, Scopes: main,
 			Run: func(m *model) tea.Cmd { return bulkLabel(m.s) }},
 	} {
 		registerAction(a)
 	}
 }
 
-// markedItems — отмеченные задачи проекта в порядке API.
+// markedItems returns the project's marked tasks in API order.
 func (s *session) markedItems() []plane.WorkItem {
 	var out []plane.WorkItem
 	for _, it := range s.items {
@@ -35,7 +35,7 @@ func (s *session) markedItems() []plane.WorkItem {
 	return out
 }
 
-// bulkRun выполняет массовую операцию в фоне; итог «n ок, m ошибок» — в статусе, затем перечитывание задач.
+// bulkRun runs a bulk operation in the background; the "n ok, m failed" summary goes to the status, then tasks are reloaded.
 func bulkRun(s *session, items []plane.WorkItem, op func(ctx context.Context, pid string) map[string]error) tea.Cmd {
 	s.marks = map[string]bool{}
 	pid := s.project.ID
@@ -51,7 +51,7 @@ func bulkRun(s *session, items []plane.WorkItem, op func(ctx context.Context, pi
 				ok++
 			}
 		}
-		text := fmt.Sprintf("%d ок, %d ошибок", ok, fail)
+		text := fmt.Sprintf("%d ok, %d failed", ok, fail)
 		if first != nil {
 			text += ": " + first.Error()
 		}
@@ -69,7 +69,7 @@ func cmpFirst(a, b error) error {
 func bulkPrecheck(s *session) ([]plane.WorkItem, bool) {
 	items := s.markedItems()
 	if s.project == nil || len(items) == 0 {
-		s.setStatus("нет отмеченных задач", true)
+		s.setStatus("no marked tasks", true)
 		return nil, false
 	}
 	return items, true
@@ -89,12 +89,12 @@ func bulkState(s *session) tea.Cmd {
 	for i, it := range items {
 		ids[i] = it.ID
 	}
-	return pushScreen(&bulkChoice{title: fmt.Sprintf("Состояние для %d задач", len(items)), opts: names,
+	return pushScreen(&bulkChoice{title: fmt.Sprintf("State for %d tasks", len(items)), opts: names,
 		pick: func(i int) tea.Cmd {
 			id := states[i].ID
-			q := fmt.Sprintf("Изменить %d задач?", len(items))
+			q := fmt.Sprintf("Change %d tasks?", len(items))
 			if destructiveState(states[i]) {
-				q = fmt.Sprintf("Перевести %d задач в %s?", len(items), states[i].Name)
+				q = fmt.Sprintf("Move %d tasks to %s?", len(items), states[i].Name)
 			}
 			return confirmWith(q, func() tea.Cmd {
 				return bulkRun(s, items, func(ctx context.Context, pid string) map[string]error {
@@ -111,7 +111,7 @@ func bulkAssign(s *session) tea.Cmd {
 	}
 	me := s.me.ID
 	add := slices.ContainsFunc(items, func(it plane.WorkItem) bool { return !slices.Contains(it.AssigneeIDs, me) })
-	return confirmWith(fmt.Sprintf("Изменить %d задач?", len(items)), func() tea.Cmd {
+	return confirmWith(fmt.Sprintf("Change %d tasks?", len(items)), func() tea.Cmd {
 		return bulkRun(s, items, func(ctx context.Context, pid string) map[string]error {
 			return s.deps.App.BulkAssign(ctx, pid, items, me, add)
 		})
@@ -126,15 +126,15 @@ func bulkLabel(s *session) tea.Cmd {
 	labels := s.meta.Labels
 	var names []string
 	for _, l := range labels {
-		names = append(names, "добавить: "+l.Name)
+		names = append(names, "add: "+l.Name)
 	}
 	for _, l := range labels {
-		names = append(names, "снять: "+l.Name)
+		names = append(names, "remove: "+l.Name)
 	}
-	return pushScreen(&bulkChoice{title: fmt.Sprintf("Метка для %d задач", len(items)), opts: names,
+	return pushScreen(&bulkChoice{title: fmt.Sprintf("Label for %d tasks", len(items)), opts: names,
 		pick: func(i int) tea.Cmd {
 			add, id := i < len(labels), labels[i%len(labels)].ID
-			return confirmWith(fmt.Sprintf("Изменить %d задач?", len(items)), func() tea.Cmd {
+			return confirmWith(fmt.Sprintf("Change %d tasks?", len(items)), func() tea.Cmd {
 				return bulkRun(s, items, func(ctx context.Context, pid string) map[string]error {
 					return s.deps.App.BulkLabel(ctx, pid, items, id, add)
 				})
@@ -142,7 +142,7 @@ func bulkLabel(s *session) tea.Cmd {
 		}})
 }
 
-// bulkChoice — список выбора для массовых действий.
+// bulkChoice is a choice list for bulk actions.
 type bulkChoice struct {
 	title string
 	opts  []string
@@ -172,7 +172,7 @@ func (c *bulkChoice) Update(s *session, msg tea.Msg) (screen, tea.Cmd) {
 		c.cur = max(len(c.opts)-1, 0)
 	case "enter":
 		if c.cur < len(c.opts) {
-			// выбор вычисляется синхронно (сбрасывает отметки), закрытие — до запуска
+			// the choice is evaluated synchronously (clears marks); the screen closes before the run
 			return c, tea.Sequence(popScreen, c.pick(c.cur))
 		}
 	}
@@ -182,7 +182,7 @@ func (c *bulkChoice) Update(s *session, msg tea.Msg) (screen, tea.Cmd) {
 func (c *bulkChoice) View(s *session) string {
 	rows := []string{s.st.accent.Bold(true).Render(" " + c.title)}
 	if len(c.opts) == 0 {
-		rows = append(rows, s.st.muted.Render(" нет вариантов"))
+		rows = append(rows, s.st.muted.Render(" no options"))
 	}
 	for i, o := range c.opts {
 		if i == c.cur {
@@ -191,7 +191,7 @@ func (c *bulkChoice) View(s *session) string {
 			rows = append(rows, " "+o)
 		}
 	}
-	rows = append(rows, s.st.muted.Render(" ↑↓ выбор   Enter применить   Esc отмена"))
+	rows = append(rows, s.st.muted.Render(" ↑↓ choose   Enter apply   Esc cancel"))
 	return clip2(rows, s.height)
 }
 

@@ -13,8 +13,8 @@ import (
 	"time"
 )
 
-// Аудит PT-45: недоступность API Plane на уровне клиента (httptest). Тесты GAP
-// проверяют ожидаемое («как надо») и пропускаются, пока поведение не исправлено.
+// Audit PT-45: Plane API unavailability at the client level (httptest). GAP tests
+// check the expected behavior and are skipped until the behavior is fixed.
 
 const flKey = "plane_api_secret"
 
@@ -28,11 +28,11 @@ func flGap(t *testing.T, ok bool, why string) {
 func flNoKey(t *testing.T, err error) {
 	t.Helper()
 	if err != nil && strings.Contains(err.Error(), flKey) {
-		t.Fatalf("ключ API попал в текст ошибки: %v", err)
+		t.Fatalf("API key leaked into the error text: %v", err)
 	}
 }
 
-// flClient — клиент к srv с таймаутом to и фиксацией пауз повтора (без реального ожидания).
+// flClient is a client for srv with timeout to and recorded retry pauses (no real waiting).
 func flClient(base string, to time.Duration) (*Client, *[]time.Duration) {
 	var sleeps []time.Duration
 	return New(Options{BaseURL: base, APIKey: flKey, Workspace: ws,
@@ -51,7 +51,7 @@ func flServer(t *testing.T, h http.HandlerFunc) (*httptest.Server, *int32) {
 	return srv, &n
 }
 
-// flCut отдаёт начало ответа и рвёт соединение (Hijack).
+// flCut sends the beginning of a response and drops the connection (Hijack).
 func flCut(w http.ResponseWriter, declared int, partial string) {
 	conn, buf, err := w.(http.Hijacker).Hijack()
 	if err != nil {
@@ -69,11 +69,11 @@ func TestFailurePlaneNoNetworkDNS(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 	if errors.Is(err, ErrUnauthorized) || errors.Is(err, ErrNotFound) {
-		t.Fatalf("сетевая ошибка принята за ответ API: %v", err)
+		t.Fatalf("network error taken for an API response: %v", err)
 	}
 	var ae *APIError
 	if errors.As(err, &ae) {
-		t.Fatalf("сетевая ошибка не должна быть APIError: %v", err)
+		t.Fatalf("network error must not be an APIError: %v", err)
 	}
 	flNoKey(t, err)
 }
@@ -81,14 +81,14 @@ func TestFailurePlaneNoNetworkDNS(t *testing.T) {
 func TestFailurePlaneConnectionRefused(t *testing.T) {
 	srv := httptest.NewServer(http.NotFoundHandler())
 	base := srv.URL
-	srv.Close() // порт закрыт
+	srv.Close() // port closed
 	c, sleeps := flClient(base, 3*time.Second)
 	_, err := c.Me(context.Background())
 	if err == nil || !strings.Contains(err.Error(), "request failed") {
 		t.Fatalf("err = %v", err)
 	}
 	if len(*sleeps) != 0 {
-		t.Fatalf("повтор на сетевой ошибке: %v", *sleeps) // как есть: повторов нет, backoff — уровнем выше (app.NextPoll)
+		t.Fatalf("retry on a network error: %v", *sleeps) // as is: no retries, backoff is a level up (app.NextPoll)
 	}
 	flNoKey(t, err)
 }
@@ -106,11 +106,11 @@ func TestFailurePlaneTimeout(t *testing.T) {
 	start := time.Now()
 	_, err := c.Projects(context.Background())
 	if d := time.Since(start); err == nil || d > 3*time.Second {
-		t.Fatalf("err=%v за %v", err, d)
+		t.Fatalf("err=%v in %v", err, d)
 	}
 	var ne net.Error
 	if !errors.As(err, &ne) || !ne.Timeout() {
-		t.Fatalf("ошибка не определяется как таймаут: %v", err)
+		t.Fatalf("error is not recognized as a timeout: %v", err)
 	}
 	flNoKey(t, err)
 }
@@ -143,7 +143,7 @@ func TestFailurePlaneMidBodyCut(t *testing.T) {
 		t.Fatalf("ps=%v err=%v", ps, err)
 	}
 	if *n != 1 {
-		t.Fatalf("запросов %d", *n)
+		t.Fatalf("requests %d", *n)
 	}
 	flNoKey(t, err)
 }
@@ -168,10 +168,10 @@ func TestFailurePlaneMidPagination(t *testing.T) {
 			c, _ := flClient(srv.URL, 3*time.Second)
 			ps, err := c.Projects(context.Background())
 			if err == nil {
-				t.Fatalf("частичный список выдан как полный: %v", ps)
+				t.Fatalf("partial list returned as complete: %v", ps)
 			}
 			if len(ps) != 0 {
-				t.Fatalf("вместе с ошибкой возвращены данные: %v", ps)
+				t.Fatalf("data returned along with the error: %v", ps)
 			}
 			flNoKey(t, err)
 		})
@@ -196,14 +196,14 @@ func TestFailurePlane5xx(t *testing.T) {
 				t.Fatalf("err = %v", err)
 			}
 			if strings.Contains(err.Error(), "<html>") {
-				t.Fatalf("HTML-страница в тексте ошибки: %v", err)
+				t.Fatalf("HTML page in the error text: %v", err)
 			}
 			want := int32(1)
 			if tc.retried {
-				want = 4 // 1 + 3 повтора с паузами 1s, 2s, 4s
+				want = 4 // 1 + 3 retries with pauses 1s, 2s, 4s
 			}
 			if *n != want || (tc.retried && len(*sleeps) != 3) {
-				t.Fatalf("запросов %d, пауз %v", *n, *sleeps)
+				t.Fatalf("requests %d, pauses %v", *n, *sleeps)
 			}
 			flNoKey(t, err)
 		})
@@ -219,15 +219,15 @@ func TestFailurePlane429RetryAfter(t *testing.T) {
 	c, sleeps := flClient(srv.URL, 3*time.Second)
 	_, err := c.Projects(context.Background())
 	if !errors.Is(err, ErrRateLimited) || *n != 4 {
-		t.Fatalf("err=%v запросов %d", err, *n)
+		t.Fatalf("err=%v requests %d", err, *n)
 	}
 	for _, d := range *sleeps {
 		if d != 2*time.Second {
-			t.Fatalf("паузы %v, ждали Retry-After 2s", *sleeps)
+			t.Fatalf("pauses %v, want Retry-After 2s", *sleeps)
 		}
 	}
 	if !strings.Contains(err.Error(), "throttled") {
-		t.Fatalf("текст сервера потерян: %v", err)
+		t.Fatalf("server text lost: %v", err)
 	}
 }
 
@@ -244,10 +244,10 @@ func TestFailurePlane429RecoversAndCaps(t *testing.T) {
 	c, sleeps := flClient(srv.URL, 3*time.Second)
 	ps, err := c.Projects(context.Background())
 	if err != nil || len(ps) != 1 {
-		t.Fatalf("восстановление после 429: %v %v", ps, err)
+		t.Fatalf("recovery after 429: %v %v", ps, err)
 	}
 	if len(*sleeps) != 1 || (*sleeps)[0] != maxWait {
-		t.Fatalf("Retry-After не ограничен %v: %v", maxWait, *sleeps)
+		t.Fatalf("Retry-After not capped at %v: %v", maxWait, *sleeps)
 	}
 }
 
@@ -261,7 +261,7 @@ func TestFailurePlane429CancelDuringWait(t *testing.T) {
 	start := time.Now()
 	_, err := c.Projects(ctx)
 	if !errors.Is(err, context.DeadlineExceeded) || time.Since(start) > 3*time.Second {
-		t.Fatalf("err=%v за %v", err, time.Since(start))
+		t.Fatalf("err=%v in %v", err, time.Since(start))
 	}
 }
 
@@ -273,7 +273,7 @@ func TestFailurePlane429RetryAfterHTTPDate(t *testing.T) {
 	c, sleeps := flClient(srv.URL, 3*time.Second)
 	_, _ = c.Projects(context.Background())
 	flGap(t, len(*sleeps) > 0 && (*sleeps)[0] >= 10*time.Second,
-		"Retry-After в формате HTTP-date (RFC 9110) не разбирается, пауза 1s/2s/4s вместо указанной; правка — transport.go retryDelay")
+		"Retry-After in HTTP-date format (RFC 9110) is not parsed, pauses are 1s/2s/4s instead of the given one; fix: transport.go retryDelay")
 }
 
 func TestFailurePlaneUnauthorized(t *testing.T) {
@@ -287,10 +287,10 @@ func TestFailurePlaneUnauthorized(t *testing.T) {
 			_, err := c.Me(context.Background())
 			var ae *APIError
 			if !errors.Is(err, ErrUnauthorized) || !errors.As(err, &ae) || ae.Status != status || *n != 1 {
-				t.Fatalf("err=%v запросов %d", err, *n)
+				t.Fatalf("err=%v requests %d", err, *n)
 			}
 			if !strings.Contains(err.Error(), "not valid") {
-				t.Fatalf("нет понятного текста: %v", err)
+				t.Fatalf("no clear text: %v", err)
 			}
 			flNoKey(t, err)
 		})
@@ -305,7 +305,7 @@ func TestFailurePlaneNotFound(t *testing.T) {
 	c, _ := flClient(srv.URL, 3*time.Second)
 	_, err := c.WorkItem(context.Background(), "p1", "nope")
 	if !errors.Is(err, ErrNotFound) || errors.Is(err, ErrUnauthorized) || *n != 1 {
-		t.Fatalf("err=%v запросов %d", err, *n)
+		t.Fatalf("err=%v requests %d", err, *n)
 	}
 }
 
@@ -319,7 +319,7 @@ func TestFailurePlaneTLS(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 	if hits != 0 {
-		t.Fatal("запрос (с ключом) ушёл на сервер с недоверенным сертификатом")
+		t.Fatal("request (with the key) went to a server with an untrusted certificate")
 	}
 	flNoKey(t, err)
 }
@@ -351,13 +351,13 @@ func TestFailurePlaneGarbageResponse(t *testing.T) {
 			t.Run(bn+"/"+cn, func(t *testing.T) {
 				err := call(c)
 				if bn == "empty" && (cn == "Projects" || cn == "WorkItems" || cn == "Comments") {
-					return // пустое тело списка = пустой список (как есть, см. api-failures.md)
+					return // an empty list body = an empty list (as is, see api-failures.md)
 				}
 				if err == nil {
-					t.Fatal("мусор принят как успех")
+					t.Fatal("garbage accepted as success")
 				}
 				if strings.Contains(err.Error(), "Login to your network") {
-					t.Fatalf("тело ответа в тексте ошибки: %v", err)
+					t.Fatalf("response body in the error text: %v", err)
 				}
 				flNoKey(t, err)
 			})
@@ -370,10 +370,10 @@ func TestFailurePlaneMeGarbageHasContext(t *testing.T) {
 	c, _ := flClient(srv.URL, 3*time.Second)
 	_, err := c.Me(context.Background())
 	if err == nil {
-		t.Fatal("ожидалась ошибка")
+		t.Fatal("expected an error")
 	}
 	flGap(t, strings.HasPrefix(err.Error(), "plane:"),
-		"Me: ошибка разбора без префикса «plane:» и контекста («invalid character '<'…»); правка — endpoints.go Me, convMember")
+		"Me: the parse error has no \"plane:\" prefix and no context (\"invalid character '<'…\"); fix: endpoints.go Me, convMember")
 }
 
 func TestFailurePlaneListWithoutResults(t *testing.T) {
@@ -381,7 +381,7 @@ func TestFailurePlaneListWithoutResults(t *testing.T) {
 	c, _ := flClient(srv.URL, 3*time.Second)
 	items, err := c.WorkItems(context.Background(), "p1")
 	flGap(t, err != nil,
-		fmt.Sprintf("ответ 200 без поля results принят как пустой список (%d задач) и затрёт кэш; правка — paginate.go splitPage", len(items)))
+		fmt.Sprintf("a 200 response without a results field is taken as an empty list (%d tasks) and wipes the cache; fix: paginate.go splitPage", len(items)))
 }
 
 func TestFailurePlaneEmptyObjectAsItem(t *testing.T) {
@@ -389,17 +389,17 @@ func TestFailurePlaneEmptyObjectAsItem(t *testing.T) {
 	c, _ := flClient(srv.URL, 3*time.Second)
 	it, err := c.UpdateWorkItem(context.Background(), "p1", "i1", WorkItemPatch{})
 	flGap(t, err != nil || it.ID != "",
-		"ответ 200 «{}» на правку принят как задача без ID; правка — endpoints.go itemCall")
+		"a 200 \"{}\" response to an edit is taken as a task without an ID; fix: endpoints.go itemCall")
 }
 
 func TestFailurePlaneKeyNotInErrors(t *testing.T) {
-	// Ключ уходит только в заголовке; ни одна ошибка клиента не содержит ни ключа, ни URL с query.
+	// The key goes only in the header; no client error contains the key or a URL with a query.
 	srv, _ := flServer(t, func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(500) })
 	c, _ := flClient(srv.URL, 3*time.Second)
 	_, err := c.Projects(context.Background())
 	flNoKey(t, err)
 	if err != nil && strings.Contains(err.Error(), srv.URL) {
-		t.Fatalf("URL сервера в тексте ошибки: %v", err)
+		t.Fatalf("server URL in the error text: %v", err)
 	}
 }
 
@@ -411,5 +411,5 @@ func TestFailurePlaneServerEchoesKey(t *testing.T) {
 	c, _ := flClient(srv.URL, 3*time.Second)
 	_, err := c.Me(context.Background())
 	flGap(t, err != nil && !strings.Contains(err.Error(), flKey),
-		"текст ошибки берётся из тела ответа как есть: сервер/прокси, эхом возвращающий ключ, раскроет его в статусной строке и stderr; правка — transport.go errorMessage (вырезать ключ клиента)")
+		"the error text is taken from the response body as is: a server/proxy echoing the key would expose it in the status line and stderr; fix: transport.go errorMessage (strip the client key)")
 }

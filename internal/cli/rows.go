@@ -14,7 +14,7 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// row — задача в выводе ls/search/show.
+// row is an issue in ls/search/show output.
 type row struct {
 	Key        string   `json:"key"`
 	ID         string   `json:"id"`
@@ -91,7 +91,7 @@ func prio(p string) string {
 	return p
 }
 
-// writeRows печатает строки с выровненными колонками.
+// writeRows prints rows with aligned columns.
 func writeRows(w io.Writer, rows []row) {
 	var kw, sw, pw int
 	for _, r := range rows {

@@ -10,13 +10,13 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-const kanbanMinCol = 22 // минимальная ширина колонки; уже — горизонтальная прокрутка
+const kanbanMinCol = 22 // minimum column width; narrower means horizontal scroll
 
-// kanban — вид «канбан»: колонки-состояния (без «Все»), задачи под курсором.
+// kanban is the board view: one column per state (no "All"), tasks under the cursor.
 type kanban struct {
-	sel      string // ID выбранной задачи
+	sel      string // ID of the selected task
 	col, row int
-	off      int // первая видимая колонка
+	off      int // first visible column
 }
 
 func init() {
@@ -30,27 +30,27 @@ func init() {
 	}
 	kb := []string{"kanban"}
 	for _, a := range []action{
-		{ID: "kanban.nav", Title: "Канбан: колонка, задача", Group: "канбан", Scopes: kb,
-			Keys: []string{"left", "right", "up", "down", "pgup", "pgdown", "home", "end"}, Hint: "←→↑↓|ход",
+		{ID: "kanban.nav", Title: "Kanban: column, task", Group: "kanban", Scopes: kb,
+			Keys: []string{"left", "right", "up", "down", "pgup", "pgdown", "home", "end"}, Hint: "←→↑↓|move",
 			Run: func(m *model) tea.Cmd { return m.forward() }},
-		{ID: "kanban.move.left", Title: "Перенос в предыдущее состояние", Group: "канбан", Scopes: kb,
-			Keys: []string{"shift+left"}, Hint: "Shift+←→|перенос", Run: func(m *model) tea.Cmd { return m.forward() }},
-		{ID: "kanban.move.right", Title: "Перенос в следующее состояние", Group: "канбан", Scopes: kb,
+		{ID: "kanban.move.left", Title: "Move to previous state", Group: "kanban", Scopes: kb,
+			Keys: []string{"shift+left"}, Hint: "Shift+←→|move", Run: func(m *model) tea.Cmd { return m.forward() }},
+		{ID: "kanban.move.right", Title: "Move to next state", Group: "kanban", Scopes: kb,
 			Keys: []string{"shift+right"}, Run: func(m *model) tea.Cmd { return m.forward() }},
-		{ID: "kanban.open", Title: "Открыть карточку", Group: "канбан", Scopes: kb,
-			Keys: []string{"enter"}, Hint: "карточка", Run: func(m *model) tea.Cmd { return m.forward() }},
-		{ID: "kanban.back", Title: "Назад к таблице", Group: "канбан", Scopes: kb,
-			Keys: []string{"v"}, Hint: "таблица", Run: func(m *model) tea.Cmd { m.pop(); return nil }},
+		{ID: "kanban.open", Title: "Open card", Group: "kanban", Scopes: kb,
+			Keys: []string{"enter"}, Hint: "card", Run: func(m *model) tea.Cmd { return m.forward() }},
+		{ID: "kanban.back", Title: "Back to table", Group: "kanban", Scopes: kb,
+			Keys: []string{"v"}, Hint: "table", Run: func(m *model) tea.Cmd { m.pop(); return nil }},
 	} {
 		registerAction(a)
 	}
 }
 
-func (k *kanban) Title() string       { return "канбан" }
+func (k *kanban) Title() string       { return "kanban" }
 func (k *kanban) Scope() string       { return "kanban" }
 func (k *kanban) CapturesInput() bool { return false }
 
-// column — задачи колонки i с учётом фильтров и сортировки.
+// column returns the tasks of column i with filters and sorting applied.
 func (k *kanban) column(s *session, i int) []plane.WorkItem {
 	if i < 0 || i >= len(s.tabs) {
 		return nil
@@ -69,7 +69,7 @@ func (k *kanban) column(s *session, i int) []plane.WorkItem {
 	return out
 }
 
-// sync согласует позицию с данными: выбранная задача ищется по ID, иначе позиция зажимается.
+// sync reconciles the position with the data: the selected task is looked up by ID, otherwise the position is clamped.
 func (k *kanban) sync(s *session) {
 	if len(s.tabs) == 0 {
 		k.col, k.row, k.sel = 0, 0, ""
@@ -101,7 +101,7 @@ func (k *kanban) selectAt(s *session, col, row int) {
 	k.sync(s)
 }
 
-// kanbanMovedMsg — итог неудачного переноса (успех приходит как itemMsg).
+// kanbanMovedMsg is the result of a failed move (success arrives as itemMsg).
 type kanbanMovedMsg struct {
 	id, from, to string
 	err          error
@@ -121,7 +121,7 @@ func moveItem(s *session, id, from, to string) tea.Cmd {
 	}
 }
 
-// setItemState меняет состояние задачи в сессии (копия среза).
+// setItemState changes a task state in the session (copy of the slice).
 func (s *session) setItemState(id, state string) {
 	if i := slices.IndexFunc(s.items, func(x plane.WorkItem) bool { return x.ID == id }); i >= 0 {
 		s.items = slices.Clone(s.items)
@@ -143,7 +143,7 @@ func (k *kanban) move(s *session, d int) tea.Cmd {
 		return moveItem(s, it.ID, from, s.tabs[to].ID)
 	}
 	if destructiveState(s.tabs[to]) {
-		return confirmWith("Перевести "+itoaKey(s, it.Sequence)+" в "+s.tabs[to].Name+"?", run)
+		return confirmWith("Move "+itoaKey(s, it.Sequence)+" to "+s.tabs[to].Name+"?", run)
 	}
 	return run()
 }
@@ -151,11 +151,11 @@ func (k *kanban) move(s *session, d int) tea.Cmd {
 func (k *kanban) Update(s *session, msg tea.Msg) (screen, tea.Cmd) {
 	switch msg := msg.(type) {
 	case kanbanMovedMsg:
-		// откат, если задача ещё в целевом состоянии
+		// roll back if the task is still in the target state
 		if it, ok := s.itemByID(msg.id); ok && it.StateID == msg.to {
 			s.setItemState(msg.id, msg.from)
 		}
-		s.setStatus("перенос не удался: "+msg.err.Error(), true)
+		s.setStatus("move failed: "+msg.err.Error(), true)
 		k.sync(s)
 		return k, nil
 	case tea.KeyMsg:
@@ -196,18 +196,18 @@ func (k *kanban) Update(s *session, msg tea.Msg) (screen, tea.Cmd) {
 
 func (k *kanban) View(s *session) string {
 	k.sync(s)
-	head := s.st.accent.Bold(true).Render(" канбан ")
+	head := s.st.accent.Bold(true).Render(" kanban ")
 	if s.project != nil {
 		head = s.st.accent.Bold(true).Render(" "+s.project.Identifier+" ") + head
 	}
 	if s.mine {
-		head += s.st.accent.Render("[Мои]")
+		head += s.st.accent.Render("[Mine]")
 	}
 	rows := []string{clip(head, s.width)}
 	h := max(s.height-3, 1)
 	n := len(s.tabs)
 	if n == 0 {
-		rows = append(rows, s.st.muted.Render("нет данных"))
+		rows = append(rows, s.st.muted.Render("no data"))
 	} else {
 		vis := n
 		if s.width < n*kanbanMinCol+n-1 {
@@ -241,7 +241,7 @@ func (k *kanban) View(s *session) string {
 	return strings.Join(rows, "\n")
 }
 
-// renderColumn — заголовок и карточки колонки ровно height+1 строк шириной w.
+// renderColumn renders the column header and cards, exactly height+1 lines of width w.
 func (k *kanban) renderColumn(s *session, c, w, height int) []string {
 	items := k.column(s, c)
 	title := " " + s.tabs[c].Name + " " + itoa(len(items)) + " "

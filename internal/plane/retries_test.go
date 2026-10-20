@@ -20,7 +20,7 @@ func TestContractRetriesDisabled(t *testing.T) {
 		_, _ = c.Projects(context.Background())
 		srv.Close()
 		if n != tc.want {
-			t.Errorf("MaxRetries %d: запросов %d, want %d", tc.max, n, tc.want)
+			t.Errorf("MaxRetries %d: requests %d, want %d", tc.max, n, tc.want)
 		}
 	}
 }

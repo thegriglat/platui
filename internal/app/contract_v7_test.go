@@ -20,7 +20,7 @@ func TestContractAppV7OfflineFromCache(t *testing.T) {
 	e.rebuild()
 	e.failAll(flNet)
 	if off, _ := e.app.Offline(); off {
-		t.Fatal("offline до обращения")
+		t.Fatal("offline before any call")
 	}
 	if m, err := e.app.Me(ctx()); err != nil || m.ID != "u-me" {
 		t.Fatalf("Me: %v %v", m, err)
@@ -31,19 +31,19 @@ func TestContractAppV7OfflineFromCache(t *testing.T) {
 	if off, at := e.app.Offline(); !off || !at.Equal(t0) {
 		t.Fatalf("Offline = %v %v", off, at)
 	}
-	// авторизация кэшем не подменяется
+	// authorization is not replaced by the cache
 	e.rebuild()
 	e.failAll(flAuth)
 	if _, err := e.app.Me(ctx()); err == nil {
-		t.Fatal("401 подменён кэшем")
+		t.Fatal("401 replaced by the cache")
 	}
-	// возврат сети
+	// network is back
 	e.failAll(nil)
 	if _, err := e.app.Me(ctx()); err != nil {
 		t.Fatal(err)
 	}
 	if off, _ := e.app.Offline(); off {
-		t.Fatal("offline после успеха")
+		t.Fatal("offline after success")
 	}
 }
 
@@ -56,7 +56,7 @@ func TestContractAppV7ReplaceKeepsTime(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, at, _ := e.app.CachedItems("p1"); !at.Equal(t0) {
-		t.Fatalf("время изменилось: %v", at)
+		t.Fatalf("time changed: %v", at)
 	}
 }
 

@@ -12,44 +12,44 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// C4 v8: старт без сети, пометка «офлайн», восстановление, сохранение текста $EDITOR.
+// C4 v8: start without network, "offline" marker, recovery, saving $EDITOR text.
 func TestContractTUIV8OfflineAndRecovery(t *testing.T) {
 	_, e := flEnvNew(t, 0, nil)
 	e.failAll(flNet)
 	m := flModel(t, e.api, e.store, 0, nil)
-	want := "офлайн, данные от " + t0.Format("15:04")
+	want := "offline, data from " + t0.Format("15:04")
 	if len(m.s.items) != 5 || !strings.Contains(m.s.status.text, want) || !strings.Contains(view(m), want) {
-		t.Fatalf("задач %d, статус %+v", len(m.s.items), m.s.status)
+		t.Fatalf("tasks %d, status %+v", len(m.s.items), m.s.status)
 	}
-	// не-ошибочный статус не вытесняет пометку
-	m.s.setStatus("отменено", false)
-	if v := view(m); !strings.Contains(v, want) || !strings.Contains(v, "отменено") {
-		t.Fatalf("пометка пропала:\n%s", v)
+	// a non-error status does not displace the marker
+	m.s.setStatus("cancelled", false)
+	if v := view(m); !strings.Contains(v, want) || !strings.Contains(v, "cancelled") {
+		t.Fatalf("marker lost:\n%s", v)
 	}
-	// сеть вернулась: R снимает офлайн, сообщение «обновлено» (reload) затем фон — «связь восстановлена» один раз
+	// network is back: R clears offline, the "refreshed" message (reload), then background: "connection restored" once
 	e.failAll(nil)
 	press(t, m, "R")
-	if !strings.Contains(m.s.status.text, "связь восстановлена") || !strings.Contains(m.s.status.text, "обновлено") {
+	if !strings.Contains(m.s.status.text, "connection restored") || !strings.Contains(m.s.status.text, "updated") {
 		t.Fatalf("R: %q", m.s.status.text)
 	}
-	if m.s.net.offline || m.s.status.isErr || strings.Contains(view(m), "офлайн") {
-		t.Fatalf("офлайн не снят: %+v", m.s.status)
+	if m.s.net.offline || m.s.status.isErr || strings.Contains(view(m), "offline") {
+		t.Fatalf("offline not cleared: %+v", m.s.status)
 	}
 	e.setErr("WorkItems", flNet)
 	feed(t, m, pollMsg{})
 	e.setErr("WorkItems", nil)
 	feed(t, m, pollMsg{})
-	if m.s.status.text != "связь восстановлена" || m.s.status.isErr {
-		t.Fatalf("статус %+v", m.s.status)
+	if m.s.status.text != "connection restored" || m.s.status.isErr {
+		t.Fatalf("status %+v", m.s.status)
 	}
 	feed(t, m, pollMsg{})
-	if m.s.status.text != "связь восстановлена" {
-		t.Fatal("повторная проверка")
+	if m.s.status.text != "connection restored" {
+		t.Fatal("repeated check")
 	}
 	m.s.setStatus("x", false)
 	feed(t, m, pollMsg{})
 	if m.s.status.text != "x" {
-		t.Fatalf("«связь восстановлена» повторилась: %q", m.s.status.text)
+		t.Fatalf("\"connection restored\" repeated: %q", m.s.status.text)
 	}
 }
 
@@ -70,34 +70,34 @@ func TestContractTUIV8EditorDraftRetry(t *testing.T) {
 	e.setErr("CreateComment", flNet)
 	m.s.cursor = "i1"
 	press(t, m, "c")
-	if !m.s.status.isErr || !strings.Contains(m.s.status.text, "текст сохранён: "+path) {
-		t.Fatalf("статус %+v", m.s.status)
+	if !m.s.status.isErr || !strings.Contains(m.s.status.text, "text saved: "+path) {
+		t.Fatalf("status %+v", m.s.status)
 	}
 	if b, err := os.ReadFile(path); err != nil || !strings.Contains(string(b), "precious text") {
-		t.Fatalf("файл: %v", err)
+		t.Fatalf("file: %v", err)
 	}
-	// повтор: предложение использовать сохранённый текст, y — отправка без редактора
+	// retry: offers the saved text, y sends it without the editor
 	e.setErr("CreateComment", nil)
 	press(t, m, "c")
 	if _, ok := m.top().(*confirmScreen); !ok {
-		t.Fatalf("нет предложения: %T", m.top())
+		t.Fatalf("no offer: %T", m.top())
 	}
 	pressD(t, m, "y")
-	if m.s.status.isErr || !strings.Contains(m.s.status.text, "комментарий добавлен") {
-		t.Fatalf("статус %+v", m.s.status)
+	if m.s.status.isErr || !strings.Contains(m.s.status.text, "comment added") {
+		t.Fatalf("status %+v", m.s.status)
 	}
 	e.api.Mu.Lock()
 	cs := e.api.CommentsV["i1"]
 	e.api.Mu.Unlock()
-	if len(cs) != 1 || strings.Contains(cs[0].HTML, "Комментарий к") || !strings.Contains(cs[0].HTML, "precious text") {
-		t.Fatalf("в Plane ушли подсказки или не тот текст: %+v", cs)
+	if len(cs) != 1 || strings.Contains(cs[0].HTML, "Comment on") || !strings.Contains(cs[0].HTML, "precious text") {
+		t.Fatalf("hints or wrong text went to Plane: %+v", cs)
 	}
 	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		t.Fatal("файл не удалён после успеха")
+		t.Fatal("file not removed after success")
 	}
 }
 
-// N — файл черновика удалён, редактор открывается с описанием из Plane.
+// N: the draft file is removed, the editor opens with the description from Plane.
 func TestContractTUIV8EditorDraftDecline(t *testing.T) {
 	syncExec(t)
 	var paths []string
@@ -123,20 +123,20 @@ func TestContractTUIV8EditorDraftDecline(t *testing.T) {
 	press(t, m, "e")
 	pressD(t, m, "n")
 	if len(paths) != 2 || paths[0] == paths[1] {
-		t.Fatalf("ждали новую сессию: %v", paths)
+		t.Fatalf("expected a new session: %v", paths)
 	}
 	e.api.Mu.Lock()
 	d := e.api.ItemsV["p1"][0].DescHTML
 	e.api.Mu.Unlock()
 	if !strings.Contains(d, "from plane") || strings.Count(d, "keep me") != 1 {
-		t.Fatalf("в редактор пришёл не текст из Plane: %q %+v %v", d, m.s.status, paths)
+		t.Fatalf("editor got text other than from Plane: %q %+v %v", d, m.s.status, paths)
 	}
 	if _, err := os.Stat(paths[0]); !os.IsNotExist(err) {
-		t.Fatal("файл черновика не удалён")
+		t.Fatal("draft file not removed")
 	}
 }
 
-// Отказ от «описание изменилось, перезаписать?» — текст сохраняется.
+// Refusing "description changed, overwrite?" keeps the text.
 func TestContractTUIV8OverwriteDeclineKeepsText(t *testing.T) {
 	syncExec(t)
 	var path string
@@ -154,21 +154,21 @@ func TestContractTUIV8OverwriteDeclineKeepsText(t *testing.T) {
 	})
 	m.s.cursor = "i1"
 	m.s.items[0].DescHTML = "<p>old</p>"
-	m.s.items[0].UpdatedAt = t0.Add(-time.Hour) // «загружено» раньше изменения в Plane
+	m.s.items[0].UpdatedAt = t0.Add(-time.Hour) // "loaded" before the change in Plane
 	press(t, m, "e")
 	if _, ok := m.top().(*confirmScreen); !ok {
-		t.Fatalf("нет вопроса: %T %+v", m.top(), m.s.status)
+		t.Fatalf("no question: %T %+v", m.top(), m.s.status)
 	}
 	pressD(t, m, "n")
-	if !m.s.status.isErr || !strings.Contains(m.s.status.text, "текст сохранён: "+path) {
-		t.Fatalf("статус %+v", m.s.status)
+	if !m.s.status.isErr || !strings.Contains(m.s.status.text, "text saved: "+path) {
+		t.Fatalf("status %+v", m.s.status)
 	}
 	if b, err := os.ReadFile(path); err != nil || !strings.Contains(string(b), "my text") {
-		t.Fatalf("файл: %v", err)
+		t.Fatalf("file: %v", err)
 	}
 }
 
-// Первый успешный опрос после ошибки — «связь восстановлена», в том числе с изменениями.
+// The first successful poll after an error reports "connection restored", including with changes.
 func TestContractTUIV8RecoveryWithChanges(t *testing.T) {
 	m, e := flEnvNew(t, 30*time.Second, nil)
 	e.setErr("WorkItems", flNet)
@@ -179,7 +179,7 @@ func TestContractTUIV8RecoveryWithChanges(t *testing.T) {
 	e.api.ItemsV["p1"][0].UpdatedAt = t0.Add(time.Hour)
 	e.api.Mu.Unlock()
 	feed(t, m, pollMsg{})
-	if !strings.HasPrefix(m.s.status.text, "связь восстановлена; изменения") || m.s.status.isErr {
-		t.Fatalf("статус %+v", m.s.status)
+	if !strings.HasPrefix(m.s.status.text, "connection restored; changes") || m.s.status.isErr {
+		t.Fatalf("status %+v", m.s.status)
 	}
 }

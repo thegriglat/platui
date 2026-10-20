@@ -23,37 +23,37 @@ func TestBulkActions(t *testing.T) {
 	before := countCalls(e, "UpdateWorkItem")
 	pressD(t, m, "s")
 	if m.top().Scope() != "dialog" {
-		t.Fatalf("нет выбора состояния")
+		t.Fatalf("no state choice")
 	}
 	pressD(t, m, "down", "down", "enter", "y")
-	if len(m.s.marks) != 0 || !strings.HasPrefix(m.s.status.text, "2 ок, 0 ошибок") {
-		t.Fatalf("итог: %q marks=%v calls=%v", m.s.status.text, m.s.marks, e.api.Calls)
+	if len(m.s.marks) != 0 || !strings.HasPrefix(m.s.status.text, "2 ok, 0 failed") {
+		t.Fatalf("summary: %q marks=%v calls=%v", m.s.status.text, m.s.marks, e.api.Calls)
 	}
 	if n := countCalls(e, "UpdateWorkItem") - before; n != 2 {
-		t.Fatalf("патчей %d: %v", n, e.api.Calls)
+		t.Fatalf("patches %d: %v", n, e.api.Calls)
 	}
-	// назначить на себя: i2 ещё не мой
+	// assign to me: i2 is not mine yet
 	m.s.marks["i2"], m.s.marks["i3"] = true, true
 	pressD(t, m, "a", "y")
-	if !strings.HasPrefix(m.s.status.text, "") || !strings.Contains(m.s.status.text, "ок") {
+	if !strings.HasPrefix(m.s.status.text, "") || !strings.Contains(m.s.status.text, "ok") {
 		t.Fatalf("a: %q", m.s.status.text)
 	}
-	// метка
+	// label
 	m.s.marks["i4"] = true
 	pressD(t, m, "L")
 	pressD(t, m, "enter", "y")
-	if !strings.Contains(m.s.status.text, "1 ок") {
+	if !strings.Contains(m.s.status.text, "1 ok") {
 		t.Fatalf("l: %q", m.s.status.text)
 	}
-	// отмена выбора
+	// clearing the selection
 	m.s.marks["i4"] = true
 	pressD(t, m, "L", "esc")
 	if m.top().Scope() != "main" || len(m.s.marks) != 1 {
 		t.Fatalf("esc")
 	}
-	// палитра со сводкой отмеченных
+	// palette with a summary of marked items
 	pressD(t, m, "ctrl+p")
-	if !strings.Contains(view(m), "(отмеченные)") {
-		t.Fatalf("палитра без массовых:\n%s", view(m))
+	if !strings.Contains(view(m), "(marked)") {
+		t.Fatalf("palette without bulk actions:\n%s", view(m))
 	}
 }

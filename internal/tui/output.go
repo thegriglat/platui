@@ -10,12 +10,12 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// outputScreen — окно с выводом команды (output: window); Esc/q закрывают,
-// во время выполнения Esc отменяет команду.
+// outputScreen is a window with command output (output: window); Esc/q close it,
+// while the command runs Esc cancels it.
 type outputScreen struct {
 	title, body string
 	vp          viewport.Model
-	cancel      context.CancelFunc // не nil, пока команда выполняется
+	cancel      context.CancelFunc // non-nil while the command is running
 }
 
 func newOutputVP() viewport.Model {
@@ -27,9 +27,9 @@ func newOutputVP() viewport.Model {
 	return vp
 }
 
-// newRunningOutput — окно команды, которая ещё выполняется.
+// newRunningOutput is a window for a command that is still running.
 func newRunningOutput(name string, cancel context.CancelFunc) *outputScreen {
-	return &outputScreen{title: name, body: "выполняется… (Esc — отмена)", vp: newOutputVP(), cancel: cancel}
+	return &outputScreen{title: name, body: "running… (Esc to cancel)", vp: newOutputVP(), cancel: cancel}
 }
 
 func newOutputScreen(name, stdout, stderr string, code int) *outputScreen {
@@ -38,18 +38,18 @@ func newOutputScreen(name, stdout, stderr string, code int) *outputScreen {
 	return o
 }
 
-// finish заполняет окно результатом команды.
+// finish fills the window with the command result.
 func (o *outputScreen) finish(name, stdout, stderr string, code int) {
 	body := stdout
 	if stderr != "" {
 		body += "\n" + stderr
 	}
 	if body = strings.TrimRight(body, "\n"); body == "" {
-		body = "(нет вывода)"
+		body = "(no output)"
 	}
 	o.title, o.body, o.cancel = name, body, nil
 	if code != 0 {
-		o.title += fmt.Sprintf(" — код %d", code)
+		o.title += fmt.Sprintf(" — exit %d", code)
 	}
 }
 
@@ -74,7 +74,7 @@ func (o *outputScreen) Update(s *session, msg tea.Msg) (screen, tea.Cmd) {
 			if o.cancel != nil {
 				o.cancel()
 				o.cancel = nil
-				s.setStatus("отменено", false)
+				s.setStatus("cancelled", false)
 			}
 			return o, popScreen
 		case "home":
@@ -94,5 +94,5 @@ func (o *outputScreen) View(s *session) string {
 	o.vp.Width, o.vp.Height = s.width, max(s.height-2, 1)
 	o.vp.SetContent(o.body)
 	return s.st.accent.Bold(true).Render(" "+o.title) + "\n" + o.vp.View() + "\n" +
-		s.st.muted.Render(" ↑↓ прокрутка   Esc, q закрыть")
+		s.st.muted.Render(" ↑↓ scroll   Esc, q close")
 }

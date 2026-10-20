@@ -48,6 +48,6 @@ func TestErrNoAPIKey(t *testing.T) {
 		t.Fatal(err)
 	}
 	if _, err := LoadNoKey(p); err == nil {
-		t.Error("валидация должна работать без ключа")
+		t.Error("validation must work without a key")
 	}
 }

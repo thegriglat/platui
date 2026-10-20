@@ -9,7 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// previewTick — период проверки «какая карточка нужна» (отложенная загрузка комментариев).
+// previewTick is the check period for "which card is needed" (deferred comment loading).
 const previewTick = 250 * time.Millisecond
 
 type previewTickMsg struct{}
@@ -23,14 +23,14 @@ func init() {
 	newItemScreen = func(s *session, it plane.WorkItem) screen { return &itemScreen{card: newCardView(), id: it.ID} }
 }
 
-// preview — панель превью карточки под курсором; она же загружает комментарии
-// для курсора и открытой карточки (после того как выбор не менялся один тик).
+// preview is the preview pane of the card under the cursor; it also loads comments
+// for the cursor and the open card (once the selection has been stable for one tick).
 type preview struct {
 	card      *cardView
 	armed     bool
-	prev      string // выбор на прошлом тике
-	requested string // для кого уже запрошены комментарии
-	openSeen  string // открытая карточка, замеченная на прошлом тике
+	prev      string // selection at the previous tick
+	requested string // who comments were already requested for
+	openSeen  string // open card seen at the previous tick
 }
 
 func wantedItem(s *session) string {
@@ -65,7 +65,7 @@ func (p *preview) Update(s *session, msg tea.Msg) (pane, tea.Cmd) {
 	return p, tea.Batch(cmds...)
 }
 
-// load запрашивает комментарии (и свежую задачу для открытой карточки), когда выбор стабилен.
+// load requests comments (and a fresh task for the open card) when the selection is stable.
 func (p *preview) load(s *session) tea.Cmd {
 	if s.openItem != p.openSeen {
 		p.openSeen, p.requested = s.openItem, ""
@@ -90,18 +90,18 @@ func (p *preview) load(s *session) tea.Cmd {
 
 func (p *preview) View(s *session, width, height int) string {
 	if len(s.visible()) == 0 && s.cursor == "" {
-		return s.st.muted.Render("нет задачи")
+		return s.st.muted.Render("no task")
 	}
 	return p.card.view(s, s.cursor, width, height)
 }
 
-// itemScreen — полная карточка на весь экран.
+// itemScreen is the full-screen card.
 type itemScreen struct {
 	card *cardView
 	id   string
 }
 
-func (c *itemScreen) Title() string       { return "карточка" }
+func (c *itemScreen) Title() string       { return "card" }
 func (c *itemScreen) Scope() string       { return "item" }
 func (c *itemScreen) CapturesInput() bool { return false }
 
@@ -120,7 +120,7 @@ func (c *itemScreen) Update(s *session, msg tea.Msg) (screen, tea.Cmd) {
 }
 
 func (c *itemScreen) View(s *session) string {
-	head := s.st.accent.Bold(true).Render(" Карточка")
+	head := s.st.accent.Bold(true).Render(" Card")
 	h := max(s.height-3, 1)
 	body := fitBlock(c.card.view(s, c.id, s.width, h), s.width, h)
 	out := append([]string{head}, body...)

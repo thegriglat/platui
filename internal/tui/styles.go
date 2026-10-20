@@ -6,7 +6,7 @@ import (
 	"github.com/thegriglat/platui/internal/config"
 )
 
-// styles — набор стилей из config.Color; при ColorsDisabled цвета не применяются.
+// styles is a style set built from config.Color; with ColorsDisabled no colors are applied.
 type styles struct {
 	accent, muted, text, err, ok, warn, sel, border lipgloss.Style
 	tabOn, tabOff, bold                             lipgloss.Style
@@ -33,7 +33,7 @@ func newStyles(cfg *config.Config) styles {
 	return st
 }
 
-// priority возвращает стиль приоритета (без цвета для неизвестного).
+// priority returns the priority style (uncolored for an unknown one).
 func (st styles) priority(p string) lipgloss.Style {
 	if s, ok := st.prio[p]; ok {
 		return s

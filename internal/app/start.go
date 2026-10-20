@@ -11,21 +11,21 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// StartOptions — параметры «старта работы».
+// StartOptions are the parameters of "start work".
 type StartOptions struct {
-	Branch   string // пусто — BranchName
+	Branch   string // empty: BranchName
 	Worktree *bool  // nil — cfg.Branch.Worktree
 }
 
-// StartResult — итог «старта работы».
+// StartResult is the outcome of "start work".
 type StartResult struct {
 	Branch   gitbranch.Result
-	State    string // имя нового состояния; "" — не менялось
+	State    string // name of the new state; "" if unchanged
 	Assigned bool
 	Warnings []string
 }
 
-// Start создаёт ветку (или worktree), пишет шаблон коммита и переводит задачу в работу.
+// Start creates a branch (or worktree), writes the commit template and moves the task to in progress.
 func (a *App) Start(ctx context.Context, p plane.Project, it plane.WorkItem, o StartOptions) (StartResult, error) {
 	var res StartResult
 	g, err := a.git()
@@ -80,7 +80,7 @@ func (a *App) prepareCommit(g gitbranch.Git, name string, p plane.Project, it pl
 		var old string
 		var ok bool
 		if old, ok, err = g.ReadCommitMsg(name); err == nil && ok && old != msg {
-			res.Warnings = append(res.Warnings, "сообщение коммита для "+name+" уже есть — не перезаписано")
+			res.Warnings = append(res.Warnings, "commit message for "+name+" already exists — not overwritten")
 		} else if err == nil {
 			err = g.WriteCommitMsg(name, msg)
 		}
@@ -94,7 +94,7 @@ func (a *App) prepareCommit(g gitbranch.Git, name string, p plane.Project, it pl
 	}
 }
 
-// findState: по имени без учёта регистра.
+// findState matches by name, case-insensitively.
 func findState(states []plane.State, name string) (plane.State, bool) {
 	i := slices.IndexFunc(states, func(s plane.State) bool { return strings.EqualFold(s.Name, strings.TrimSpace(name)) })
 	if i < 0 || strings.TrimSpace(name) == "" {

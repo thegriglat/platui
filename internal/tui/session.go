@@ -16,20 +16,20 @@ import (
 	"github.com/thegriglat/platui/internal/text"
 )
 
-// Deps — зависимости TUI (C4 v3).
+// Deps are the TUI dependencies (C4 v3).
 type Deps struct {
 	App       *app.App
 	Config    *config.Config
 	OpenURL   func(url string) error  // nil → browser.OpenURL
-	Clipboard func(text string) error // nil → OSC52 в os.Stderr
+	Clipboard func(text string) error // nil → OSC52 to os.Stderr
 	Now       func() time.Time        // nil → time.Now
 	Start     StartAt
 }
 
-// StartAt — с чего начать.
+// StartAt is where to start.
 type StartAt struct {
-	Project string // identifier; пусто — Config.DefaultProject, иначе экран проектов
-	Item    string // "PROJ-42"; пусто — по текущей ветке
+	Project string // identifier; empty — Config.DefaultProject, otherwise the projects screen
+	Item    string // "PROJ-42"; empty — from the current branch
 }
 
 func (d Deps) withDefaults() Deps {
@@ -54,7 +54,7 @@ func (d Deps) withDefaults() Deps {
 	return d
 }
 
-// Порядок сортировки (sortBy).
+// Sort orders (sortBy).
 const (
 	sortAPI = iota
 	sortPriority
@@ -63,10 +63,10 @@ const (
 	sortID
 )
 
-// freshTTL — сколько новая/изменённая задача считается свежей.
+// freshTTL is how long a new/changed task counts as fresh.
 const freshTTL = 10 * time.Minute
 
-// session — общее состояние программы.
+// session is the shared program state.
 type session struct {
 	deps          Deps
 	st            styles
@@ -92,22 +92,22 @@ type session struct {
 	loading       bool
 	status        statusLine
 
-	// служебное PT-5a
-	searching  bool   // идёт ввод запроса (PT-5b): главный экран перехватывает клавиши
-	searchLine string // готовая строка поиска от PT-5b; пусто — «/ запрос найдено N»
-	live       bool   // данные проекта получены из API
-	pending    string // ID задачи, которую нужно выбрать после загрузки
-	openItem   string // ID задачи в открытой карточке (ставит openItem, снимает pop)
+	// PT-5a internals
+	searching  bool   // a query is being typed (PT-5b): the main screen captures keys
+	searchLine string // ready search line from PT-5b; empty — "/ query found N"
+	live       bool   // project data was received from the API
+	pending    string // ID of the task to select after loading
+	openItem   string // ID of the task in the open card (set by openItem, cleared by pop)
 	pollArmed  bool
 	polling    bool
 	pollEvery  time.Duration
 	bell       func()
-	net        netState // связь и черновики (offline.go)
+	net        netState // connection and drafts (offline.go)
 
-	panel panelState // раскладка панелей: ширина превью, zoom (panels.go)
-	hist  history    // история открытых карточек (history.go)
+	panel panelState // pane layout: preview width, zoom (panels.go)
+	hist  history    // history of opened cards (history.go)
 
-	ctx    context.Context // отменяется при выходе из программы (свои команды)
+	ctx    context.Context // cancelled on program exit (own commands)
 	cancel context.CancelFunc
 }
 
@@ -118,7 +118,7 @@ func newSession(d Deps) *session {
 		branches: map[string]gitbranch.BranchStatus{}, bell: func() { _, _ = io.WriteString(os.Stderr, "\a") }}
 }
 
-// resetProject переключает проект: данные сбрасываются.
+// resetProject switches the project: data is reset.
 func (s *session) resetProject(p plane.Project) {
 	s.project = &p
 	s.meta, s.items, s.tabs, s.tab = app.Meta{Project: p}, nil, nil, 0
@@ -127,7 +127,7 @@ func (s *session) resetProject(p plane.Project) {
 	s.live, s.loading, s.searching, s.searchLine, s.polling, s.openItem = false, true, false, "", false, ""
 }
 
-// rebuildIndex перестраивает поисковый индекс (по заголовкам) и совпадения.
+// rebuildIndex rebuilds the search index (by titles) and the matches.
 func (s *session) rebuildIndex() {
 	if s.project == nil {
 		return
@@ -136,7 +136,7 @@ func (s *session) rebuildIndex() {
 	s.setQuery(s.query)
 }
 
-// setQuery задаёт запрос (не длиннее search.MaxQuery рун); ключ-запрос фильтр не меняет.
+// setQuery sets the query (at most search.MaxQuery runes); a key query does not change the filter.
 func (s *session) setQuery(q string) {
 	if r := []rune(q); len(r) > search.MaxQuery {
 		q = string(r[:search.MaxQuery])
@@ -154,7 +154,7 @@ func (s *session) setQuery(q string) {
 	}
 }
 
-// itemByID — задача проекта по ID.
+// itemByID returns a project task by ID.
 func (s *session) itemByID(id string) (plane.WorkItem, bool) {
 	for _, it := range s.items {
 		if it.ID == id {

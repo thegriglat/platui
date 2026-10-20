@@ -14,7 +14,7 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// pump выполняет команду; tea.Sequence (unexported sequenceMsg) разворачивается по порядку.
+// pump runs a command; tea.Sequence (unexported sequenceMsg) is expanded in order.
 func pump(t *testing.T, m *model, cmd tea.Cmd) {
 	t.Helper()
 	for _, r := range run(t, cmd) {
@@ -56,25 +56,25 @@ func typeText(t *testing.T, m *model, s string) {
 func TestContractTUITable(t *testing.T) {
 	m, e := newTestModelCfg(t, StartAt{Project: "PROJ"}, func(c *config.Config) {
 		c.Theme.NoColor = true
-		c.Filters = []config.Filter{{Name: "Срочные", Priorities: []string{"urgent"}}}
+		c.Filters = []config.Filter{{Name: "Urgent", Priorities: []string{"urgent"}}}
 	})
 	s := m.s
 	e.api.ItemsV["p1"][0].Name = "Alpha"
-	// таблица: колонки и признак ветки
+	// table: columns and branch marker
 	s.branches = map[string]gitbranch.BranchStatus{"i5": {Local: true, Ahead: 2, Remote: true}}
-	feed(t, m, tea.WindowSizeMsg{Width: 200, Height: 30}) // с превью (PT-5c) таблица уже, колонка «Исп.» скрывается
+	feed(t, m, tea.WindowSizeMsg{Width: 200, Height: 30}) // with the preview (PT-5c) the table is narrower, the "Asg" column is hidden
 	v := view(m)
-	for _, w := range []string{"ID", "Название", "Пр.", "Ветка", "PROJ-1", "● ↑2 ☁", "ME"} {
+	for _, w := range []string{"ID", "Title", "Pri", "Branch", "PROJ-1", "● ↑2 ☁", "ME"} {
 		if !strings.Contains(v, w) {
 			t.Errorf("table lacks %q:\n%s", w, v)
 		}
 	}
-	// навигация и Enter
+	// navigation and Enter
 	keys(t, m, "down", "down")
 	if s.cursor != s.visible()[2].ID {
 		t.Errorf("cursor %s", s.cursor)
 	}
-	// space — отметка
+	// space — mark
 	id := s.cursor
 	keys(t, m, "space")
 	if !s.marks[id] || s.cursor == id {
@@ -84,16 +84,16 @@ func TestContractTUITable(t *testing.T) {
 	if s.marks[id] {
 		t.Error("unmark")
 	}
-	// сортировка
+	// sorting
 	keys(t, m, "o")
-	if s.sortBy != sortPriority || !strings.Contains(view(m), "Пр.▲") {
+	if s.sortBy != sortPriority || !strings.Contains(view(m), "Pri▲") {
 		t.Errorf("sort %d\n%s", s.sortBy, view(m))
 	}
 	keys(t, m, "o", "o", "o", "o")
 	if s.sortBy != sortAPI {
 		t.Errorf("sort cycle %d", s.sortBy)
 	}
-	// фильтры
+	// filters
 	keys(t, m, "F", "down", "enter")
 	if s.filter != 1 || s.tabCount(0) != 2 {
 		t.Errorf("filter=%d count=%d", s.filter, s.tabCount(0))
@@ -102,7 +102,7 @@ func TestContractTUITable(t *testing.T) {
 	if s.filter != 0 {
 		t.Error("filter reset")
 	}
-	// поиск по мере ввода: только заголовок, без вызовов API
+	// search as you type: title only, no API calls
 	calls := len(e.api.Calls)
 	keys(t, m, "/")
 	typeText(t, m, "login")
@@ -112,7 +112,7 @@ func TestContractTUITable(t *testing.T) {
 	if s.tabCount(0) != 1 || s.tabCount(2) != 1 || s.tabCount(1) != 0 {
 		t.Errorf("counts %d %d %d", s.tabCount(0), s.tabCount(1), s.tabCount(2))
 	}
-	if v := view(m); !strings.Contains(v, "Fix [login] page") || !strings.Contains(v, "найдено 1") {
+	if v := view(m); !strings.Contains(v, "Fix [login] page") || !strings.Contains(v, "found 1") {
 		t.Errorf("search view:\n%s", v)
 	}
 	if len(e.api.Calls) != calls {
@@ -122,33 +122,33 @@ func TestContractTUITable(t *testing.T) {
 	if s.query != "" || len(s.visible()) == 0 || s.searching {
 		t.Errorf("esc: %q", s.query)
 	}
-	// только заголовок: слово из описания не находит
+	// title only: a word from the description does not match
 	keys(t, m, "/")
 	typeText(t, m, "desc")
 	if len(s.visible()) != 0 {
 		t.Errorf("description matched")
 	}
 	keys(t, m, "esc")
-	// 33-я руна не принимается
+	// the 33rd rune is not accepted
 	keys(t, m, "/")
 	typeText(t, m, strings.Repeat("a", 40))
 	if n := len([]rune(s.query)); n != 32 {
 		t.Errorf("query len %d", n)
 	}
 	keys(t, m, "esc")
-	// Enter не-ключ: фильтр остаётся
+	// Enter on a non-key: the filter stays
 	keys(t, m, "/")
 	typeText(t, m, "number 3")
 	keys(t, m, "enter")
 	if s.searching || s.query != "number 3" || len(s.visible()) != 1 {
 		t.Errorf("enter: %q %d", s.query, len(s.visible()))
 	}
-	keys(t, m, "esc") // не в поиске: Esc ничего не ломает
+	keys(t, m, "esc") // not in search: Esc breaks nothing
 	s.setQuery("")
-	// запрос-ключ: фильтр не меняется
+	// key query: the filter does not change
 	keys(t, m, "/")
 	typeText(t, m, "PROJ-5")
-	if len(s.visible()) != 11 || !strings.Contains(view(m), "Enter — открыть PROJ-5") {
+	if len(s.visible()) != 11 || !strings.Contains(view(m), "Enter — open PROJ-5") {
 		t.Errorf("key query:\n%s", view(m))
 	}
 	keys(t, m, "enter")
@@ -158,21 +158,21 @@ func TestContractTUITable(t *testing.T) {
 	if s.cursor != "i5" {
 		t.Errorf("cursor %s", s.cursor)
 	}
-	// Ctrl+G в другой проект → WorkItemByKey
+	// Ctrl+G to another project → WorkItemByKey
 	send(t, m, tea.KeyMsg{Type: tea.KeyCtrlG})
 	typeText(t, m, "OTH-7")
 	keys(t, m, "enter")
 	if e.count("WorkItemByKey") == 0 || s.project.Identifier != "OTH" {
 		t.Errorf("goto other: calls=%v project=%v", e.api.Calls, s.project)
 	}
-	// не найдена
+	// not found
 	send(t, m, tea.KeyMsg{Type: tea.KeyCtrlG})
 	typeText(t, m, "OTH-99")
 	keys(t, m, "enter")
-	if !strings.Contains(s.status.text, "не найдена") {
+	if !strings.Contains(s.status.text, "not found") {
 		t.Errorf("status %q", s.status.text)
 	}
-	// экран проектов
+	// projects screen
 	keys(t, m, "P")
 	if m.top().Scope() != "projects" || !strings.Contains(view(m), "One") {
 		t.Fatalf("projects:\n%s", view(m))
@@ -194,11 +194,11 @@ func TestTableLayoutNarrow(t *testing.T) {
 		}
 	}
 	feed(t, m, tea.WindowSizeMsg{Width: 50, Height: 20})
-	if v := view(m); strings.Contains(v, "Исп.") || strings.Contains(v, "Сост.") {
+	if v := view(m); strings.Contains(v, "Asg") || strings.Contains(v, "State") {
 		t.Errorf("columns not hidden:\n%s", v)
 	}
 	feed(t, m, tea.WindowSizeMsg{Width: 99, Height: 20})
-	if v := view(m); !strings.Contains(v, "Сост.") {
+	if v := view(m); !strings.Contains(v, "State") {
 		t.Errorf("state hidden at 99:\n%s", v)
 	}
 }

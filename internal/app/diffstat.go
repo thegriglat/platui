@@ -5,8 +5,8 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// DiffStat — размер изменений ветки задачи относительно cfg.Branch.Base.
-// Ветка определяется как в BranchStatuses; нет локальной ветки или Git nil → ok=false.
+// DiffStat is the size of the task branch changes relative to cfg.Branch.Base.
+// The branch is determined as in BranchStatuses; no local branch or nil Git → ok=false.
 func (a *App) DiffStat(p plane.Project, it plane.WorkItem) (gitbranch.Stat, bool, error) {
 	if a.d.Git == nil {
 		return gitbranch.Stat{}, false, nil

@@ -22,8 +22,8 @@ import (
 	"github.com/thegriglat/platui/internal/text"
 )
 
-// Аудит PT-45: недоступность API Plane на уровне TUI. Тесты GAP проверяют
-// ожидаемое («как надо») и пропускаются, пока поведение не исправлено.
+// Audit PT-45: Plane API unavailability at the TUI level. GAP tests check
+// the expected behavior and are skipped until the behavior is fixed.
 
 const flKey = "plane_api_secret"
 
@@ -78,13 +78,13 @@ type flEnv struct {
 	cfg   *config.Config
 }
 
-// flModel собирает модель поверх api и общего store; interval 0 — без фонового опроса.
+// flModel builds a model over api and a shared store; interval 0 means no background polling.
 func flModel(t *testing.T, api plane.API, store cache.Store, interval time.Duration, edit func(*config.Config)) *model {
 	t.Helper()
 	return flModelWith(t, api, store, interval, edit, feed, run)
 }
 
-// flRunLong — как run, но ждёт до 5 с (реальные сетевые отказы: DNS, таймаут клиента).
+// flRunLong is like run but waits up to 5 s (real network failures: DNS, client timeout).
 func flRunLong(t *testing.T, cmd tea.Cmd) []tea.Msg {
 	t.Helper()
 	if cmd == nil {
@@ -102,11 +102,11 @@ func flRunLong(t *testing.T, cmd tea.Cmd) []tea.Msg {
 			return out
 		}
 		if _, tick := msg.(previewTickMsg); tick || msg == nil {
-			return nil // периодический тик превью перезапускает сам себя
+			return nil // the periodic preview tick restarts itself
 		}
 		return []tea.Msg{msg}
 	case <-time.After(5 * time.Second):
-		t.Fatal("команда не завершилась за 5 с: зависание")
+		t.Fatal("command did not finish within 5 s: hang")
 		return nil
 	}
 }
@@ -142,12 +142,12 @@ func flEnvNew(t *testing.T, interval time.Duration, edit func(*config.Config)) (
 	e := &flEnv{api: flFake(), store: cache.NewMem(func() time.Time { return t0 })}
 	m := flModel(t, e.api, e.store, interval, edit)
 	if len(m.s.items) != 5 {
-		t.Fatalf("прогрев: %d задач, статус %+v", len(m.s.items), m.s.status)
+		t.Fatalf("warm-up: %d tasks, status %+v", len(m.s.items), m.s.status)
 	}
 	return m, e
 }
 
-// flFeedAll подаёт результат команды (разворачивая Batch) в модель.
+// flFeedAll feeds a command result (unwrapping Batch) into the model.
 func flFeedAll(t *testing.T, m *model, cmd tea.Cmd) {
 	t.Helper()
 	for _, r := range run(t, cmd) {
@@ -158,7 +158,7 @@ func flFeedAll(t *testing.T, m *model, cmd tea.Cmd) {
 func flStatusClean(t *testing.T, m *model) {
 	t.Helper()
 	if strings.Contains(m.s.status.text, flKey) || strings.Contains(view(m), flKey) {
-		t.Fatalf("ключ API на экране: %q", m.s.status.text)
+		t.Fatalf("API key on screen: %q", m.s.status.text)
 	}
 }
 
@@ -167,12 +167,12 @@ func TestFailureTUIBootNoNetwork(t *testing.T) {
 	api.Err["Me"] = flNet
 	m := flModel(t, api, cache.NewMem(nil), 0, nil)
 	if !m.s.status.isErr || !strings.Contains(m.s.status.text, "no such host") || len(m.s.items) != 0 {
-		t.Fatalf("статус %+v, задач %d", m.s.status, len(m.s.items))
+		t.Fatalf("status %+v, tasks %d", m.s.status, len(m.s.items))
 	}
 	if !strings.Contains(view(m), "no such host") {
-		t.Fatalf("ошибки нет на экране:\n%s", view(m))
+		t.Fatalf("error not on screen:\n%s", view(m))
 	}
-	// без проекта действия не падают
+	// actions do not crash without a project
 	press(t, m, "R", "n", "esc", "s", "a", "e", "c", "v", "esc", "tab", "down", "enter", "esc")
 }
 
@@ -181,7 +181,7 @@ func TestFailureTUIBootUnauthorized(t *testing.T) {
 	api.Err["Me"] = flAuth
 	m := flModel(t, api, cache.NewMem(nil), 0, nil)
 	if !m.s.status.isErr || !strings.Contains(m.s.status.text, "401") || !strings.Contains(m.s.status.text, "not valid") {
-		t.Fatalf("статус %+v", m.s.status)
+		t.Fatalf("status %+v", m.s.status)
 	}
 	flStatusClean(t, m)
 }
@@ -191,39 +191,39 @@ func TestFailureTUIBootProjectsDown(t *testing.T) {
 	api.Err["Projects"] = &plane.APIError{Status: 503, Message: "Service Unavailable"}
 	m := flModel(t, api, cache.NewMem(nil), 0, nil)
 	if !m.s.status.isErr || !strings.Contains(m.s.status.text, "503") {
-		t.Fatalf("статус %+v", m.s.status)
+		t.Fatalf("status %+v", m.s.status)
 	}
 }
 
-// Процесс стартует при недоступном API, на диске — кэш прошлого сеанса.
+// The process starts with the API unavailable and a cache from a previous session on disk.
 func TestFailureTUIOfflineStartFromCache(t *testing.T) {
 	m1, e := flEnvNew(t, 0, nil)
 	_ = m1
 	e.failAll(flNet)
 	m := flModel(t, e.api, e.store, 0, nil)
 	if !m.s.status.isErr {
-		t.Fatalf("ошибка не показана: %+v", m.s.status)
+		t.Fatalf("error not shown: %+v", m.s.status)
 	}
-	flGap(t, len(m.s.items) == 5 && strings.Contains(m.s.status.text, "офлайн") && strings.Contains(m.s.status.text, t0.Format("15:04")),
-		fmt.Sprintf("старт при недоступном API не использует кэш и не ставит пометку «офлайн, данные от ЧЧ:ММ» (задач на экране: %d, статус %q): bootstrap падает на Me, Projects/Meta не читают диск; правка — app (кэш Me/Projects/Meta) + tui/msgs.go bootstrap, status", len(m.s.items), m.s.status.text))
+	flGap(t, len(m.s.items) == 5 && strings.Contains(m.s.status.text, "offline") && strings.Contains(m.s.status.text, t0.Format("15:04")),
+		fmt.Sprintf("start with the API unavailable does not use the cache and sets no \"offline, data from HH:MM\" marker (tasks on screen: %d, status %q): bootstrap fails on Me, Projects/Meta do not read the disk; fix: app (Me/Projects/Meta cache) + tui/msgs.go bootstrap, status", len(m.s.items), m.s.status.text))
 }
 
-// Me/Projects/Meta доступны, не отвечают только задачи: кэш показывается, ошибка — в статусе.
+// Me/Projects/Meta are available, only tasks fail to respond: the cache is shown, the error goes to the status.
 func TestFailureTUIItemsDownShowsCache(t *testing.T) {
 	_, e := flEnvNew(t, 0, nil)
 	e.setErr("WorkItems", flNet)
 	m := flModel(t, e.api, e.store, 0, nil)
 	if len(m.s.items) != 5 {
-		t.Fatalf("кэш не показан: %d задач", len(m.s.items))
+		t.Fatalf("cache not shown: %d tasks", len(m.s.items))
 	}
 	if !m.s.status.isErr || m.s.loading {
-		t.Fatalf("статус %+v loading=%v", m.s.status, m.s.loading)
+		t.Fatalf("status %+v loading=%v", m.s.status, m.s.loading)
 	}
 	if !strings.Contains(view(m), "Task number 1") {
-		t.Fatalf("таблица пуста:\n%s", view(m))
+		t.Fatalf("table is empty:\n%s", view(m))
 	}
-	flGap(t, strings.Contains(m.s.status.text, "офлайн"),
-		fmt.Sprintf("при ошибке обновления нет пометки «офлайн, данные от ЧЧ:ММ» (статус: %q); правка — tui/update.go onItems + app (время списка)", m.s.status.text))
+	flGap(t, strings.Contains(m.s.status.text, "offline"),
+		fmt.Sprintf("no \"offline, data from HH:MM\" marker on a refresh error (status: %q); fix: tui/update.go onItems + app (list time)", m.s.status.text))
 }
 
 func TestFailureTUIReloadKeepsDataAndRecovers(t *testing.T) {
@@ -234,20 +234,20 @@ func TestFailureTUIReloadKeepsDataAndRecovers(t *testing.T) {
 	}{{"WorkItems", flNet, "no such host"}, {"States", flAuth, "401"}, {"Labels", &plane.APIError{Status: 500, Message: "Internal Server Error"}, "500"}} {
 		t.Run(tc.method, func(t *testing.T) {
 			m, e := flEnvNew(t, 0, nil)
-			e.api.ItemsV["p1"] = e.api.ItemsV["p1"][:1] // сервер уже «изменился», но обновление оборвётся
+			e.api.ItemsV["p1"] = e.api.ItemsV["p1"][:1] // the server has already "changed", but the refresh will be cut off
 			e.setErr(tc.method, tc.err)
 			press(t, m, "R")
 			if len(m.s.items) != 5 || !m.s.status.isErr || !strings.Contains(m.s.status.text, tc.want) || m.s.loading {
-				t.Fatalf("задач %d, статус %+v, loading=%v", len(m.s.items), m.s.status, m.s.loading)
+				t.Fatalf("tasks %d, status %+v, loading=%v", len(m.s.items), m.s.status, m.s.loading)
 			}
 			if len(m.s.tabs) == 0 {
-				t.Fatal("табы пропали")
+				t.Fatal("tabs vanished")
 			}
 			flStatusClean(t, m)
-			e.setErr(tc.method, nil) // сеть вернулась
+			e.setErr(tc.method, nil) // network is back
 			press(t, m, "R")
-			if len(m.s.items) != 1 || m.s.status.isErr || !strings.Contains(m.s.status.text, "обновлено: 1") {
-				t.Fatalf("восстановление: задач %d, статус %+v", len(m.s.items), m.s.status)
+			if len(m.s.items) != 1 || m.s.status.isErr || !strings.Contains(m.s.status.text, "updated: 1") {
+				t.Fatalf("recovery: tasks %d, status %+v", len(m.s.items), m.s.status)
 			}
 		})
 	}
@@ -265,25 +265,25 @@ func TestFailureTUIPollBackoffAndRecovery(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			m, e := flEnvNew(t, 30*time.Second, nil)
 			if m.s.pollEvery != 30*time.Second {
-				t.Fatalf("база %v", m.s.pollEvery)
+				t.Fatalf("base %v", m.s.pollEvery)
 			}
 			e.setErr("WorkItems", tc.err)
 			for i, want := range tc.want {
 				feed(t, m, pollMsg{})
 				if m.s.pollEvery != want || !m.s.status.isErr || m.s.polling {
-					t.Fatalf("шаг %d: интервал %v (ждали %v), статус %+v, polling=%v", i, m.s.pollEvery, want, m.s.status, m.s.polling)
+					t.Fatalf("step %d: interval %v (want %v), status %+v, polling=%v", i, m.s.pollEvery, want, m.s.status, m.s.polling)
 				}
 			}
 			if len(m.s.items) != 5 {
-				t.Fatal("данные потеряны")
+				t.Fatal("data lost")
 			}
 			e.setErr("WorkItems", nil)
 			feed(t, m, pollMsg{})
 			if m.s.pollEvery != 30*time.Second {
-				t.Fatalf("интервал после восстановления: %v", m.s.pollEvery)
+				t.Fatalf("interval after recovery: %v", m.s.pollEvery)
 			}
 			flGap(t, !m.s.status.isErr,
-				fmt.Sprintf("после восстановления связи красная ошибка остаётся в статусной строке до следующего сообщения (%q); правка — tui/update.go onItems (очистка/«связь восстановлена» при успешном опросе после ошибки)", m.s.status.text))
+				fmt.Sprintf("after the connection recovers the red error stays in the status line until the next message (%q); fix: tui/update.go onItems (clear / \"connection restored\" on a successful poll after an error)", m.s.status.text))
 		})
 	}
 }
@@ -294,19 +294,19 @@ func TestFailureTUIPollDoesNotPileUp(t *testing.T) {
 	n := e.api.Calls
 	before := len(n)
 	feed(t, m, pollMsg{})
-	// пока опрос «в полёте» (polling), новые pollMsg не порождают запросы
+	// while a poll is in flight (polling), new pollMsg do not spawn requests
 	m.s.polling = true
 	for i := 0; i < 5; i++ {
 		_, cmd := m.Update(pollMsg{})
 		if cmd != nil {
-			t.Fatal("pollMsg при активном опросе породил команду")
+			t.Fatal("pollMsg spawned a command during an active poll")
 		}
 	}
 	e.api.Mu.Lock()
 	got := len(e.api.Calls) - before
 	e.api.Mu.Unlock()
 	if got != 1 {
-		t.Fatalf("запросов %d", got)
+		t.Fatalf("requests %d", got)
 	}
 }
 
@@ -317,27 +317,27 @@ func TestFailureTUIEditsDoNotChangeItems(t *testing.T) {
 	snap := func(id string) plane.WorkItem { it, _ := m.s.itemByID(id); return it }
 	before := snap("i2")
 
-	// «на себя»
+	// "assign to me"
 	m.s.cursor = "i2"
 	press(t, m, "a")
-	// состояние и приоритет (итоговые команды выбора из списков)
+	// state and priority (the final commands of the list pickers)
 	st, pr := "s4", "urgent"
-	flFeedAll(t, m, patchWith(m.s, "i2", plane.WorkItemPatch{StateID: &st}, "состояние: Done"))
-	flFeedAll(t, m, patchWith(m.s, "i2", plane.WorkItemPatch{Priority: &pr}, "приоритет: urgent"))
+	flFeedAll(t, m, patchWith(m.s, "i2", plane.WorkItemPatch{StateID: &st}, "state: Done"))
+	flFeedAll(t, m, patchWith(m.s, "i2", plane.WorkItemPatch{Priority: &pr}, "priority: urgent"))
 	flFeedAll(t, m, patchItem(m.s, "i2", plane.WorkItemPatch{StateID: &st}))
 	after := snap("i2")
 	if after.StateID != before.StateID || after.Priority != before.Priority || len(after.AssigneeIDs) != len(before.AssigneeIDs) {
-		t.Fatalf("задача изменена: %+v", after)
+		t.Fatalf("task changed: %+v", after)
 	}
 	if !m.s.status.isErr || !strings.Contains(m.s.status.text, "503") {
-		t.Fatalf("статус %+v", m.s.status)
+		t.Fatalf("status %+v", m.s.status)
 	}
 	flStatusClean(t, m)
-	// успех после восстановления
+	// success after recovery
 	e.setErr("UpdateWorkItem", nil)
 	press(t, m, "a")
 	if it := snap("i2"); len(it.AssigneeIDs) != 1 || m.s.status.isErr {
-		t.Fatalf("после восстановления: %+v %+v", it, m.s.status)
+		t.Fatalf("after recovery: %+v %+v", it, m.s.status)
 	}
 }
 
@@ -348,13 +348,13 @@ func TestFailureTUIKanbanMoveRollback(t *testing.T) {
 		e.setErr("UpdateWorkItem", err)
 		special(t, m, tea.KeyShiftRight)
 		if got := stateOf(m, "i1"); got != "s1" {
-			t.Fatalf("не откатено: %s", got)
+			t.Fatalf("not rolled back: %s", got)
 		}
 		if !m.s.status.isErr || !strings.Contains(m.s.status.text, err.Error()) {
-			t.Fatalf("статус %+v", m.s.status)
+			t.Fatalf("status %+v", m.s.status)
 		}
 		if k := m.top().(*kanban); k.sel != "i1" || k.col != 0 {
-			t.Fatalf("выделение col=%d sel=%q", k.col, k.sel)
+			t.Fatalf("selection col=%d sel=%q", k.col, k.sel)
 		}
 	}
 }
@@ -366,19 +366,19 @@ func TestFailureTUICreateKeepsInput(t *testing.T) {
 	press(t, m, "enter")
 	in, ok := m.top().(*inputScreen)
 	if !ok || string(in.text) != "Broken task !high" || in.busy {
-		t.Fatalf("ввод потерян или завис: %T %+v", m.top(), in)
+		t.Fatalf("input lost or hung: %T %+v", m.top(), in)
 	}
 	if !m.s.status.isErr || !strings.Contains(m.s.status.text, "no such host") || len(m.s.items) != 5 {
-		t.Fatalf("статус %+v, задач %d", m.s.status, len(m.s.items))
+		t.Fatalf("status %+v, tasks %d", m.s.status, len(m.s.items))
 	}
-	e.setErr("CreateWorkItem", nil) // повтор без перенабора
+	e.setErr("CreateWorkItem", nil) // retry without retyping
 	press(t, m, "enter")
 	if _, ok := m.top().(*inputScreen); ok || m.s.status.isErr {
-		t.Fatalf("повтор не удался: %T %+v", m.top(), m.s.status)
+		t.Fatalf("retry failed: %T %+v", m.top(), m.s.status)
 	}
 }
 
-// Текст из $EDITOR не должен пропадать при ошибке отправки.
+// Text from $EDITOR must not be lost on a submit error.
 func TestFailureTUIEditorTextSurvivesAPIError(t *testing.T) {
 	for _, tc := range []struct{ key, method string }{{"c", "CreateComment"}, {"e", "UpdateWorkItem"}} {
 		t.Run(tc.key, func(t *testing.T) {
@@ -399,11 +399,11 @@ func TestFailureTUIEditorTextSurvivesAPIError(t *testing.T) {
 			m.s.cursor = "i1"
 			press(t, m, tc.key)
 			if !m.s.status.isErr || !strings.Contains(m.s.status.text, "no such host") {
-				t.Fatalf("ошибка не показана: %+v", m.s.status)
+				t.Fatalf("error not shown: %+v", m.s.status)
 			}
 			b, err := os.ReadFile(path)
 			flGap(t, err == nil && strings.Contains(string(b), "precious text"),
-				"при ошибке отправки комментария/описания временный файл редактора удаляется (finishEdit: defer sess.Close()) — введённый текст теряется; правка — tui/edit.go (не удалять файл при ошибке API, показать путь или сохранить черновик)")
+				"on a comment/description submit error the editor temp file is removed (finishEdit: defer sess.Close()), losing the typed text; fix: tui/edit.go (keep the file on an API error, show the path or save a draft)")
 		})
 	}
 }
@@ -411,17 +411,17 @@ func TestFailureTUIEditorTextSurvivesAPIError(t *testing.T) {
 func TestFailureTUINoNetworkViewStaysAlive(t *testing.T) {
 	m, e := flEnvNew(t, 0, nil)
 	e.failAll(flNet)
-	// каждое действие, ходящее в сеть, должно вернуть управление и показать ошибку
+	// every action that goes to the network must return control and show an error
 	m.s.cursor = "i1"
 	for _, keys := range [][]string{{"R"}, {"a"}, {"enter"}, {"esc"}, {"c"}, {"v"}, {"esc"}} {
 		press(t, m, keys...)
 	}
 	if v := view(m); !strings.Contains(v, "Task number") || m.s.loading {
-		t.Fatalf("экран сломан (loading=%v):\n%s", m.s.loading, v)
+		t.Fatalf("screen broken (loading=%v):\n%s", m.s.loading, v)
 	}
 }
 
-// ---- сквозные: настоящий plane.Client против httptest ----
+// ---- end to end: a real plane.Client against httptest ----
 
 func flReal(t *testing.T, base string, timeout time.Duration) *model {
 	t.Helper()
@@ -471,13 +471,13 @@ func TestFailureTUIE2EErrorsReadable(t *testing.T) {
 			}
 			m := flReal(t, tc.base, to)
 			if d := time.Since(start); d > 5*time.Second {
-				t.Fatalf("зависание %v", d)
+				t.Fatalf("hang %v", d)
 			}
 			if !m.s.status.isErr || !strings.Contains(m.s.status.text, tc.want) {
-				t.Fatalf("статус %+v, ждали %q", m.s.status, tc.want)
+				t.Fatalf("status %+v, want %q", m.s.status, tc.want)
 			}
 			if strings.Contains(m.s.status.text, "<html>") || strings.Contains(m.s.status.text, tc.base) {
-				t.Fatalf("тело ответа или адрес в статусе: %q", m.s.status.text)
+				t.Fatalf("response body or address in the status: %q", m.s.status.text)
 			}
 			flStatusClean(t, m)
 		})

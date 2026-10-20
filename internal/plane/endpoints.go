@@ -24,7 +24,7 @@ func convMember(r json.RawMessage) (Member, error) {
 	if err := json.Unmarshal(r, &m); err != nil {
 		return Member{}, err
 	}
-	// project-members может вкладывать пользователя в поле member
+	// project-members may nest the user in the member field
 	if m.ID == "" {
 		var w struct {
 			Member json.RawMessage `json:"member"`
@@ -43,7 +43,7 @@ func convMember(r json.RawMessage) (Member, error) {
 	return m.toMember(), nil
 }
 
-// Me — метод API.
+// Me is an API method.
 func (c *Client) Me(ctx context.Context) (Member, error) {
 	data, err := c.do(ctx, http.MethodGet, c.root("users", "me"), nil, nil)
 	if err != nil {
@@ -56,7 +56,7 @@ func (c *Client) Me(ctx context.Context) (Member, error) {
 	return m, nil
 }
 
-// Projects — метод API.
+// Projects is an API method.
 func (c *Client) Projects(ctx context.Context) ([]Project, error) {
 	return decodeList(c, ctx, c.path("projects"), func(r json.RawMessage) (Project, error) {
 		var p struct {
@@ -69,19 +69,19 @@ func (c *Client) Projects(ctx context.Context) ([]Project, error) {
 	})
 }
 
-// States — метод API.
+// States is an API method.
 func (c *Client) States(ctx context.Context, projectID string) ([]State, error) {
 	return decodeList(c, ctx, c.path("projects", projectID, "states"), func(r json.RawMessage) (State, error) {
 		return convState(r)
 	})
 }
 
-// Members — метод API.
+// Members is an API method.
 func (c *Client) Members(ctx context.Context, projectID string) ([]Member, error) {
 	return decodeList(c, ctx, c.path("projects", projectID, "project-members"), convMember)
 }
 
-// Labels — метод API.
+// Labels is an API method.
 func (c *Client) Labels(ctx context.Context, projectID string) ([]Label, error) {
 	return decodeList(c, ctx, c.path("projects", projectID, "labels"), func(r json.RawMessage) (Label, error) {
 		var l struct{ ID, Name, Color string }
@@ -90,7 +90,7 @@ func (c *Client) Labels(ctx context.Context, projectID string) ([]Label, error) 
 	})
 }
 
-// WorkItems — метод API.
+// WorkItems is an API method.
 func (c *Client) WorkItems(ctx context.Context, projectID string) ([]WorkItem, error) {
 	return decodeList(c, ctx, c.path("projects", projectID, "work-items"), func(r json.RawMessage) (WorkItem, error) {
 		return c.parseWorkItem(r, projectID)
@@ -113,12 +113,12 @@ func (c *Client) itemCall(ctx context.Context, method, projectID, id string, bod
 	return it, nil
 }
 
-// WorkItem — метод API.
+// WorkItem is an API method.
 func (c *Client) WorkItem(ctx context.Context, projectID, id string) (WorkItem, error) {
 	return c.itemCall(ctx, http.MethodGet, projectID, id, nil)
 }
 
-// CreateWorkItem — метод API; пустые поля не отправляются.
+// CreateWorkItem is an API method; empty fields are not sent.
 func (c *Client) CreateWorkItem(ctx context.Context, projectID string, n NewWorkItem) (WorkItem, error) {
 	body := map[string]any{"name": n.Name, "description_html": n.DescHTML}
 	if n.StateID != "" {
@@ -139,7 +139,7 @@ func (c *Client) CreateWorkItem(ctx context.Context, projectID string, n NewWork
 	return c.itemCall(ctx, http.MethodPost, projectID, "", body)
 }
 
-// UpdateWorkItem — метод API; отправляются только не-nil поля.
+// UpdateWorkItem is an API method; only non-nil fields are sent.
 func (c *Client) UpdateWorkItem(ctx context.Context, projectID, id string, p WorkItemPatch) (WorkItem, error) {
 	body := map[string]any{}
 	for k, v := range map[string]*string{"state": p.StateID, "priority": p.Priority, "name": p.Name, "description_html": p.DescHTML} {
@@ -159,12 +159,12 @@ func (c *Client) UpdateWorkItem(ctx context.Context, projectID, id string, p Wor
 	return c.itemCall(ctx, http.MethodPatch, projectID, id, body)
 }
 
-// Comments — метод API.
+// Comments is an API method.
 func (c *Client) Comments(ctx context.Context, projectID, id string) ([]Comment, error) {
 	return decodeList(c, ctx, c.commentsURL(projectID, id), convComment)
 }
 
-// CreateComment — метод API.
+// CreateComment is an API method.
 func (c *Client) CreateComment(ctx context.Context, projectID, id, html string) (Comment, error) {
 	data, err := c.do(ctx, http.MethodPost, c.commentsURL(projectID, id), nil, map[string]any{"comment_html": html})
 	if err != nil {
@@ -181,7 +181,7 @@ func (c *Client) commentsURL(projectID, id string) string {
 	return c.path("projects", projectID, "work-items", id, "comments")
 }
 
-// convComment разбирает комментарий: автор — actor, иначе created_by.
+// convComment parses a comment: the author is actor, otherwise created_by.
 func convComment(r json.RawMessage) (Comment, error) {
 	var cm struct {
 		ID          string          `json:"id"`

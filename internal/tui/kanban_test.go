@@ -30,7 +30,7 @@ func TestContractTUIKanban(t *testing.T) {
 			t.Fatalf("missing %q:\n%s", want, out)
 		}
 	}
-	if strings.Contains(out, "Cancelled") || strings.Contains(out, "Все") {
+	if strings.Contains(out, "Cancelled") || strings.Contains(out, "All") {
 		t.Fatalf("unexpected column:\n%s", out)
 	}
 	k := m.top().(*kanban)
@@ -55,7 +55,7 @@ func TestContractTUIKanban(t *testing.T) {
 	}
 	special(t, m, tea.KeyShiftLeft)
 	special(t, m, tea.KeyShiftLeft)
-	special(t, m, tea.KeyShiftLeft) // из первой колонки — некуда
+	special(t, m, tea.KeyShiftLeft) // from the first column — nowhere to go
 	if stateOf(m, "i4") != "s1" {
 		t.Fatalf("edge: %s", stateOf(m, "i4"))
 	}
@@ -103,7 +103,7 @@ func TestKanbanNarrowScrollAndOpen(t *testing.T) {
 	special(t, m, tea.KeyPgDown)
 	special(t, m, tea.KeyPgUp)
 	special(t, m, tea.KeyEnter)
-	if !m.s.status.isErr { // PT-5c ещё нет — «карточка недоступна»
+	if !m.s.status.isErr { // no PT-5c yet — "card unavailable"
 		if len(m.stack) < 3 {
 			t.Fatal("enter did nothing")
 		}
@@ -113,14 +113,14 @@ func TestKanbanNarrowScrollAndOpen(t *testing.T) {
 func TestKanbanEmptyAndMine(t *testing.T) {
 	m, _, _, _ := newTestModel(t)
 	press(t, m, "v", "m")
-	if !m.s.mine || !strings.Contains(view(m), "[Мои]") {
+	if !m.s.mine || !strings.Contains(view(m), "[Mine]") {
 		t.Fatal("mine")
 	}
 	m.s.setQuery("zzzzqq")
 	_ = view(m)
 	special(t, m, tea.KeyShiftRight)
 	m.s.tabs = nil
-	if !strings.Contains(view(m), "нет данных") {
+	if !strings.Contains(view(m), "no data") {
 		t.Fatal("empty")
 	}
 }

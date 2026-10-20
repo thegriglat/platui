@@ -7,7 +7,7 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// replaceItem заменяет задачу в загруженном списке (память или кэш); списка нет — ничего.
+// replaceItem replaces a task in the loaded list (memory or cache); no list: nothing happens.
 func (a *App) replaceItem(projectID string, it plane.WorkItem) {
 	its, at, ok := a.CachedItems(projectID)
 	if !ok {
@@ -21,7 +21,7 @@ func (a *App) replaceItem(projectID string, it plane.WorkItem) {
 	a.storeItems(projectID, its, at)
 }
 
-// Item загружает задачу из сети и заменяет её в памяти и кэше.
+// Item loads a task from the network and replaces it in memory and cache.
 func (a *App) Item(ctx context.Context, projectID, itemID string) (plane.WorkItem, error) {
 	it, err := a.d.API.WorkItem(ctx, projectID, itemID)
 	if err != nil {
@@ -31,7 +31,7 @@ func (a *App) Item(ctx context.Context, projectID, itemID string) (plane.WorkIte
 	return it, nil
 }
 
-// Update применяет патч и заменяет задачу в памяти и кэше.
+// Update applies a patch and replaces the task in memory and cache.
 func (a *App) Update(ctx context.Context, projectID, itemID string, p plane.WorkItemPatch) (plane.WorkItem, error) {
 	it, err := a.d.API.UpdateWorkItem(ctx, projectID, itemID, p)
 	if err != nil {
@@ -41,7 +41,7 @@ func (a *App) Update(ctx context.Context, projectID, itemID string, p plane.Work
 	return it, nil
 }
 
-// Comments — все комментарии задачи по CreatedAt.
+// Comments returns all task comments ordered by CreatedAt.
 func (a *App) Comments(ctx context.Context, projectID, itemID string) ([]plane.Comment, error) {
 	cs, err := a.d.API.Comments(ctx, projectID, itemID)
 	if err != nil {

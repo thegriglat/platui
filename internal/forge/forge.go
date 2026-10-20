@@ -1,4 +1,4 @@
-// Package forge создаёт и ищет MR в GitLab через CLI glab.
+// Package forge creates and finds MRs in GitLab via the glab CLI.
 package forge
 
 import (
@@ -7,30 +7,30 @@ import (
 	"time"
 )
 
-// MRRequest — параметры создаваемого MR.
+// MRRequest holds the parameters of an MR to create.
 type MRRequest struct {
-	Dir         string // каталог репозитория (cwd команды)
-	Head        string // исходная ветка
-	Target      string // пусто — по умолчанию проекта
+	Dir         string // repository directory (the command's cwd)
+	Head        string // source branch
+	Target      string // empty — the project default
 	Title, Body string
 	Draft       bool
 }
 
-// MR — найденный merge request.
+// MR is a found merge request.
 type MR struct {
 	IID          int
 	Title, URL   string // URL — web_url
-	State        string // opened|merged|closed (как отдаёт glab)
+	State        string // opened|merged|closed (as glab reports it)
 	SourceBranch string
 	TargetBranch string
 	UpdatedAt    time.Time
 }
 
-// Tool — операции с MR.
+// Tool provides MR operations.
 type Tool interface {
 	CreateMR(ctx context.Context, r MRRequest) (url string, err error)
 	FindMRs(ctx context.Context, dir string, branches []string, key string) ([]MR, error)
 }
 
-// ErrNotFound — glab не установлен.
+// ErrNotFound means glab is not installed.
 var ErrNotFound = errors.New("glab not installed")

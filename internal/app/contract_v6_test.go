@@ -40,7 +40,7 @@ func TestContractAppV6RenderCommand(t *testing.T) {
 	if got != want {
 		t.Fatalf("%s\nwant %s", got, want)
 	}
-	// реально через sh: ничего не исполняется
+	// really through sh: nothing is executed
 	r, err := runner.Default()(context.Background(), "", "printf %s "+RenderCommand("{title}", v), nil)
 	if err != nil || r.Stdout != v.Title {
 		t.Fatalf("%q %v", r.Stdout, err)
@@ -64,7 +64,7 @@ func TestContractAppV6RunCommand(t *testing.T) {
 	if gotDir != "." {
 		t.Fatalf("dir %q", gotDir)
 	}
-	// Shell по умолчанию
+	// Default shell
 	app = New(Deps{API: e.api, Config: e.cfg})
 	r, err = app.RunCommand(ctx(), config.Command{Command: "echo hi"}, CommandVars{})
 	if err != nil || r.Stdout != "hi\n" {
@@ -100,7 +100,7 @@ func TestContractAppV6Bookmarks(t *testing.T) {
 	if got := e.app.Bookmarks("p1"); !slices.Equal(got, []string{"i42", "i1"}) {
 		t.Fatal(got)
 	}
-	e.rebuild() // новый App, тот же Store
+	e.rebuild() // new App, same Store
 	if got := e.app.Bookmarks("p1"); !slices.Equal(got, []string{"i42", "i1"}) {
 		t.Fatalf("persist: %v", got)
 	}
@@ -113,7 +113,7 @@ func TestContractAppV6Bookmarks(t *testing.T) {
 	if len(e.app.Bookmarks("p2")) != 0 {
 		t.Fatal("projects mixed")
 	}
-	// без Store — память
+	// without Store: memory
 	app := New(Deps{API: e.api, Config: e.cfg})
 	app.ToggleBookmark("p1", "x")
 	if !slices.Equal(app.Bookmarks("p1"), []string{"x"}) {

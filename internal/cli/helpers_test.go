@@ -62,7 +62,7 @@ func newFx(t *testing.T) *fx {
 	return f
 }
 
-// run выполняет команду; конфиг пишется во временный файл.
+// run executes a command; the config is written to a temp file.
 func (f *fx) run(args ...string) int {
 	f.t.Helper()
 	f.out.Reset()

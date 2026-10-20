@@ -75,7 +75,7 @@ func TestContractForgeAlreadyExists(t *testing.T) {
 	if !reflect.DeepEqual(calls[1].args, want) {
 		t.Errorf("%v", calls[1].args)
 	}
-	// «already exists» в stdout
+	// "already exists" in stdout
 	calls = nil
 	tl = forge.New(forge.Options{Run: seq(&calls, step{out: "already exists", err: errors.New("x")}, step{out: `[{"web_url":"u"}]`})})
 	if u, err = tl.CreateMR(context.Background(), forge.MRRequest{Head: "h"}); err != nil || u != "u" {
@@ -173,7 +173,7 @@ func TestContractForgeFindMRs(t *testing.T) {
 			t.Errorf("%d: %+v", i, calls[i])
 		}
 	}
-	// пустой вывод, без key
+	// empty output, no key
 	calls = nil
 	tl = forge.New(forge.Options{Run: seq(&calls, step{out: ""}, step{out: "[]"})})
 	mrs, err = tl.FindMRs(context.Background(), "", []string{"a", "b"}, "")

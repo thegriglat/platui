@@ -11,7 +11,7 @@ import (
 	"github.com/thegriglat/platui/internal/forge"
 )
 
-// openURL открывает адрес в браузере; подменяется в тестах.
+// openURL opens a URL in the browser; replaced in tests.
 var openURL = func(u string) error {
 	browser.Stdout, browser.Stderr = io.Discard, io.Discard
 	return browser.OpenURL(u)
@@ -76,7 +76,7 @@ func runMR(s *session, w io.Writer, args []string, open, asJSON bool) error {
 		}
 	}
 	if len(mrs) == 0 {
-		return errors.New("MR не найдены")
+		return errors.New("no MRs found")
 	}
 	if open && len(mrs) == 1 {
 		return openURL(mrs[0].URL)

@@ -9,7 +9,7 @@ import (
 	"net/url"
 )
 
-// getList читает все страницы списка; elems — сырые элементы.
+// getList reads all pages of a list; elems are the raw elements.
 func (c *Client) getList(ctx context.Context, u string) ([]json.RawMessage, error) {
 	var all []json.RawMessage
 	cursor := ""

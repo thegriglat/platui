@@ -8,25 +8,25 @@ import (
 
 func init() {
 	for _, a := range []action{
-		{ID: "view.filters", Title: "Сохранённые фильтры", Group: "виды", Keys: []string{"F"}, Hint: "фильтры",
+		{ID: "view.filters", Title: "Saved filters", Group: "views", Keys: []string{"F"}, Hint: "filters",
 			Scopes: []string{"main"}, Run: func(m *model) tea.Cmd {
 				if len(m.s.deps.Config.Filters) == 0 {
-					m.s.setStatus("сохранённых фильтров нет (config: filters)", false)
+					m.s.setStatus("no saved filters (config: filters)", false)
 					return nil
 				}
 				return pushScreen(&filterMenu{list: cursorList{n: len(m.s.deps.Config.Filters) + 1, h: 12, pos: m.s.filter}})
 			}},
-		{ID: "view.filter.reset", Title: "Сбросить фильтр", Group: "виды", Keys: []string{"alt+0"},
+		{ID: "view.filter.reset", Title: "Reset filter", Group: "views", Keys: []string{"alt+0"},
 			Scopes: []string{"main"}, Run: func(m *model) tea.Cmd { m.s.filter = 0; return nil }},
 	} {
 		registerAction(a)
 	}
 }
 
-// filterMenu — выбор сохранённого фильтра (0 — без фильтра).
+// filterMenu picks a saved filter (0 means no filter).
 type filterMenu struct{ list cursorList }
 
-func (f *filterMenu) Title() string       { return "фильтры" }
+func (f *filterMenu) Title() string       { return "filters" }
 func (f *filterMenu) Scope() string       { return "dialog" }
 func (f *filterMenu) CapturesInput() bool { return false }
 
@@ -48,8 +48,8 @@ func (f *filterMenu) Update(s *session, msg tea.Msg) (screen, tea.Cmd) {
 }
 
 func (f *filterMenu) View(s *session) string {
-	lines := []string{s.st.accent.Bold(true).Render(" Фильтры"), ""}
-	names := []string{"— без фильтра —"}
+	lines := []string{s.st.accent.Bold(true).Render(" Filters"), ""}
+	names := []string{"— no filter —"}
 	for _, fl := range s.deps.Config.Filters {
 		names = append(names, fl.Name)
 	}
@@ -68,6 +68,6 @@ func (f *filterMenu) View(s *session) string {
 	for len(lines) < s.height-2 {
 		lines = append(lines, "")
 	}
-	lines = append(lines, s.st.muted.Render(" ↑↓ выбор  Enter применить  Esc отмена"), s.statusView(s.width))
+	lines = append(lines, s.st.muted.Render(" ↑↓ choose  Enter apply  Esc cancel"), s.statusView(s.width))
 	return strings.Join(lines[:min(len(lines), s.height)], "\n")
 }

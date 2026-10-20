@@ -6,29 +6,29 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// screen — экран в стеке модели.
+// screen is a screen in the model stack.
 type screen interface {
 	Update(s *session, msg tea.Msg) (screen, tea.Cmd)
 	View(s *session) string
 	Title() string
 	Scope() string       // "projects"|"main"|"kanban"|"item"|"dialog"|"palette"|"help"
-	CapturesInput() bool // текстовый ввод: глобальные клавиши, кроме Ctrl+C, не перехватываются
+	CapturesInput() bool // text input: global keys other than Ctrl+C are not intercepted
 }
 
-// pane — панель основного экрана.
+// pane is a main screen pane.
 type pane interface {
 	Update(s *session, msg tea.Msg) (pane, tea.Cmd)
 	View(s *session, width, height int) string
 }
 
-// Точки подключения подзадач PT-5b…5f (присваиваются в init() их файлов).
+// Hook points of subtasks PT-5b…5f (assigned in init() of their files).
 var (
 	newTable   func(s *session) pane   = newStubTable // PT-5b
-	newPreview func(s *session) pane                  // PT-5c; nil — превью не показывается
-	newKanban  func(s *session) screen                // PT-5f; nil — `v` сообщает «нет вида»
-	// Дополнения PT-5a (не меняют контракт). Все nil-безопасны.
-	newProjects   func(s *session) screen                           // PT-5b: экран проектов
-	newItemScreen func(s *session, it plane.WorkItem) screen        // PT-5c: полная карточка
+	newPreview func(s *session) pane                  // PT-5c; nil — no preview is shown
+	newKanban  func(s *session) screen                // PT-5f; nil — `v` reports "no view"
+	// PT-5a additions (do not change the contract). All nil-safe.
+	newProjects   func(s *session) screen                           // PT-5b: projects screen
+	newItemScreen func(s *session, it plane.WorkItem) screen        // PT-5c: full card
 	pickState     func(s *session, onPick func(plane.State)) screen // PT-5c
 	pickPriority  func(s *session, onPick func(string)) screen      // PT-5c
 	pickLabel     func(s *session, onPick func(plane.Label)) screen // PT-5c
@@ -40,10 +40,10 @@ type popScreenMsg struct{}
 func pushScreen(sc screen) tea.Cmd { return func() tea.Msg { return pushScreenMsg{sc} } }
 func popScreen() tea.Msg           { return popScreenMsg{} }
 
-// openItem открывает полную карточку; без PT-5c — статус «карточка недоступна».
+// openItem opens the full card; without PT-5c the status is "card unavailable".
 func openItem(s *session, it plane.WorkItem) tea.Cmd {
 	if newItemScreen == nil {
-		s.setStatus("карточка недоступна", true)
+		s.setStatus("card unavailable", true)
 		return nil
 	}
 	s.hist.visit(it.ID)
@@ -51,7 +51,7 @@ func openItem(s *session, it plane.WorkItem) tea.Cmd {
 	return pushScreen(newItemScreen(s, it))
 }
 
-// openItemMsg — сообщение открытия карточки (для Sequence); nil, если карточка недоступна.
+// openItemMsg is the message that opens a card (for Sequence); nil if the card is unavailable.
 func openItemMsg(s *session, it plane.WorkItem) tea.Msg {
 	if cmd := openItem(s, it); cmd != nil {
 		return cmd()

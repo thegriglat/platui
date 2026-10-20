@@ -13,7 +13,7 @@ func TestContractCLITodo(t *testing.T) {
 	if err := os.WriteFile(file, []byte("# my\n- [ ] one\ntext\n- [x] two\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	// без ключа API и без сети
+	// no API key and no network
 	f.cfgYA = "workspace: ws\ntodo:\n  path: " + file + "\n"
 	if c := f.run("todo", "add", "buy", "milk"); c != 0 {
 		t.Fatalf("add: %d %s", c, f.err.String())
@@ -50,6 +50,6 @@ func TestCLITodoBadConfig(t *testing.T) {
 	f := newFx(t)
 	f.cfgYA = "workspace: \"\"\n"
 	if c := f.run("todo"); c == 0 {
-		t.Fatal("ошибка конфига не из-за ключа должна провалить todo")
+		t.Fatal("a config error unrelated to the key must fail todo")
 	}
 }

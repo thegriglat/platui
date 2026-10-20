@@ -6,22 +6,22 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// inputScreen — модальная строка ввода (PT-5d): новая задача, имя ветки.
+// inputScreen is a modal input line (PT-5d): new task, branch name.
 type inputScreen struct {
 	title, hint string
 	text        []rune
 	busy        bool
 	onSubmit    func(c *inputScreen) tea.Cmd              // Enter
-	onKey       func(c *inputScreen, key string) tea.Cmd  // дополнительные клавиши (nil — нет)
-	onMsg       func(c *inputScreen, msg tea.Msg) tea.Cmd // прочие сообщения (nil — нет)
-	extra       func() string                             // доп. строка под вводом
+	onKey       func(c *inputScreen, key string) tea.Cmd  // extra keys (nil: none)
+	onMsg       func(c *inputScreen, msg tea.Msg) tea.Cmd // other messages (nil: none)
+	extra       func() string                             // extra line under the input
 
-	// Подсказки под вводом (похожие задачи): при изменении текста sim пересчитывается;
-	// ↓ переходит в список, Enter на строке вызывает onPick вместо onSubmit.
+	// Suggestions under the input (similar tasks): sim is recomputed when the text changes;
+	// ↓ moves into the list, Enter on a row calls onPick instead of onSubmit.
 	similar func(text string) []string
 	onPick  func(c *inputScreen, i int) tea.Cmd
 	sim     []string
-	simCur  int // -1 — фокус в строке ввода
+	simCur  int // -1: focus is in the input line
 }
 
 func (c *inputScreen) refreshSim() {
@@ -91,7 +91,7 @@ func (c *inputScreen) View(s *session) string {
 		}
 	}
 	if len(c.sim) > 0 {
-		rows = append(rows, s.st.muted.Render(" Похожие задачи (↓ — выбрать, Enter — открыть):"))
+		rows = append(rows, s.st.muted.Render(" Similar tasks (↓ select, Enter open):"))
 		for i, l := range c.sim {
 			if i == c.simCur {
 				rows = append(rows, s.st.sel.Render(clip("  > "+l, s.width)))

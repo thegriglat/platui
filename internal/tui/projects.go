@@ -10,7 +10,7 @@ import (
 
 func init() { newProjects = func(s *session) screen { return newProjectsScreen(s) } }
 
-// projectsScreen — экран выбора проекта (P).
+// projectsScreen is the project picker screen (P).
 type projectsScreen struct{ list cursorList }
 
 func newProjectsScreen(s *session) *projectsScreen {
@@ -24,7 +24,7 @@ func newProjectsScreen(s *session) *projectsScreen {
 	return p
 }
 
-func (p *projectsScreen) Title() string       { return "проекты" }
+func (p *projectsScreen) Title() string       { return "projects" }
 func (p *projectsScreen) Scope() string       { return "projects" }
 func (p *projectsScreen) CapturesInput() bool { return false }
 
@@ -49,13 +49,13 @@ func (p *projectsScreen) Update(s *session, msg tea.Msg) (screen, tea.Cmd) {
 func (p *projectsScreen) View(s *session) string {
 	p.list.SetLen(len(s.projects))
 	p.list.SetHeight(max(s.height-4, 1))
-	lines := []string{s.st.accent.Bold(true).Render(" Проекты"), ""}
+	lines := []string{s.st.accent.Bold(true).Render(" Projects"), ""}
 	from, to := p.list.Range()
 	for i := from; i < to; i++ {
 		lines = append(lines, p.row(s, s.projects[i], i == p.list.Pos()))
 	}
 	if len(s.projects) == 0 {
-		lines = append(lines, s.st.muted.Render("  проектов нет"))
+		lines = append(lines, s.st.muted.Render("  no projects"))
 	}
 	for len(lines) < s.height-2 {
 		lines = append(lines, "")

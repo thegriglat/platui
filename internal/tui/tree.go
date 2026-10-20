@@ -7,7 +7,7 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// row — строка таблицы: задача, глубина вложенности, число детей, закладка.
+// row is a table row: task, nesting depth, number of children, bookmark.
 type row struct {
 	it       plane.WorkItem
 	depth    int
@@ -16,7 +16,7 @@ type row struct {
 	pinned   bool
 }
 
-// bookmarkIDs — закладки текущего проекта (порядок добавления).
+// bookmarkIDs are the bookmarks of the current project (in the order added).
 func (s *session) bookmarkIDs() []string {
 	if s.deps.App == nil || s.project == nil {
 		return nil
@@ -24,8 +24,8 @@ func (s *session) bookmarkIDs() []string {
 	return s.deps.App.Bookmarks(s.project.ID)
 }
 
-// buildRows строит строки таблицы из visible(): закладки сверху (без дерева), остальные —
-// деревом по ParentID, свёрнутые ветки скрыты. При активном поиске — плоский список без закреплений.
+// buildRows builds table rows from visible(): bookmarks on top (no tree), the rest as a
+// tree by ParentID, collapsed branches hidden. With an active search — a flat list without pinning.
 func (s *session) buildRows(expanded map[string]bool) []row {
 	vis := s.visible()
 	if s.hits != nil {
@@ -62,7 +62,7 @@ func (s *session) buildRows(expanded map[string]bool) []row {
 	return rows
 }
 
-// revealAncestors раскрывает предков задачи id (если она скрыта свёрнутой веткой); true — что-то раскрыто.
+// revealAncestors expands the ancestors of task id (if hidden by a collapsed branch); true if anything was expanded.
 func (s *session) revealAncestors(id string, expanded map[string]bool) bool {
 	parents := map[string]string{}
 	for _, it := range s.visible() {
@@ -81,7 +81,7 @@ func (s *session) revealAncestors(id string, expanded map[string]bool) bool {
 	return changed
 }
 
-// treePrefix — отступ и маркер ветки перед названием.
+// treePrefix is the indent and branch marker before the title.
 func (r row) treePrefix() string {
 	p := ""
 	for i := 0; i < r.depth; i++ {

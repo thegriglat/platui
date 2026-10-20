@@ -1,5 +1,5 @@
-// Package text содержит чистые функции работы с текстом задач: быстрое
-// создание, Markdown↔HTML, правку во внешнем редакторе и OSC 52.
+// Package text holds pure functions for working with issue text: quick
+// create, Markdown↔HTML, editing in an external editor, and OSC 52.
 package text
 
 import (
@@ -8,15 +8,15 @@ import (
 	"strings"
 )
 
-// ErrEmptyTitle — в строке быстрого создания нет названия.
+// ErrEmptyTitle means the quick-create line has no title.
 var ErrEmptyTitle = errors.New("empty title")
 
-// Quick — результат разбора строки быстрого создания.
+// Quick is the result of parsing a quick-create line.
 type Quick struct {
-	Title     string   // оставшиеся слова через один пробел
-	Priority  string   // "" или urgent|high|medium|low|none
-	Assignees []string // без "@", в порядке появления, без повторов
-	Labels    []string // без "#", в порядке появления, без повторов
+	Title     string   // remaining words joined by single spaces
+	Priority  string   // "" or urgent|high|medium|low|none
+	Assignees []string // without "@", in order of appearance, no duplicates
+	Labels    []string // without "#", in order of appearance, no duplicates
 }
 
 var priorities = map[string]string{
@@ -27,7 +27,7 @@ var priorities = map[string]string{
 	"none": "none", "n": "none",
 }
 
-// ParseQuick разбирает строку вида "fix login !high @me #bug".
+// ParseQuick parses a line like "fix login !high @me #bug".
 func ParseQuick(s string) (Quick, error) {
 	var q Quick
 	var words []string

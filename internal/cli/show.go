@@ -13,7 +13,7 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// projectErr делает ошибку проекта понятной.
+// projectErr makes a project error readable.
 func projectErr(s *session, err error) error {
 	if s.projectIdent() == "" {
 		return errors.New("no project: use --project or default_project in the config")
@@ -48,7 +48,7 @@ func showCmd(s *session) *cobra.Command {
 	return c
 }
 
-// resolve находит задачу по ссылке PROJ-42 или 42.
+// resolve finds an issue by reference, PROJ-42 or 42.
 func resolve(s *session, ref string) (*app.App, plane.Project, plane.WorkItem, error) {
 	a, err := s.load()
 	if err != nil {

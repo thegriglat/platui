@@ -12,7 +12,7 @@ import (
 	"github.com/thegriglat/platui/internal/gitbranch"
 )
 
-// openGit — открытие репозитория; подменяется в тестах.
+// openGit opens the repository; replaced in tests.
 var openGit = func(dir string) (gitbranch.Git, error) { return gitbranch.Open(dir) }
 
 func branchCmd(s *session) *cobra.Command {

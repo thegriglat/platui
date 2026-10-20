@@ -13,7 +13,7 @@ import (
 	"github.com/thegriglat/platui/internal/todo"
 )
 
-// todoPath — путь к todo-файлу; ключ API не нужен (todo работает без сети).
+// todoPath is the todo file path; no API key needed (todo works offline).
 func todoPath(s *session) (string, error) {
 	if s.cfg != nil {
 		return s.cfg.TodoPath()
@@ -35,7 +35,7 @@ func todoPath(s *session) (string, error) {
 	return cfg.TodoPath()
 }
 
-// todoApply: Load, изменение, Save; при ErrChanged — один повтор.
+// todoApply runs Load, modify, Save; retries once on ErrChanged.
 func todoApply(path string, fn func(l *todo.List) error) error {
 	for try := 0; ; try++ {
 		l, err := todo.Load(path)

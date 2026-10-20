@@ -33,7 +33,7 @@ for an issue with a single key.
 Requires Go 1.24+. Merge request features need [`glab`](https://gitlab.com/gitlab-org/cli) (GitLab only).
 
 ```sh
-go install github.com/thegriglat/platui/cmd/platui@latest
+go install github.com/thegriglat/platui@latest
 ```
 
 Or build from source:
@@ -41,7 +41,7 @@ Or build from source:
 ```sh
 git clone https://github.com/thegriglat/platui.git
 cd platui
-go build -o platui ./cmd/platui
+go build -o platui .
 ```
 
 ## Configuration
@@ -51,7 +51,7 @@ use `--config <path>` to point elsewhere. A minimal config:
 
 ```yaml
 base_url: https://api.plane.so   # your instance URL for self-hosted Plane
-api_key_env: PLANE_API_KEY       # or: api_key: plane_api_xxx
+api_key: plane_api_xxx           # or: api_key_env: PLANE_API_KEY
 workspace: my-team               # workspace slug from the Plane URL
 default_project: PROJ            # optional: project identifier to open on start
 branch:
@@ -66,6 +66,7 @@ workspace per config is supported.
 Notes:
 
 - Set either `api_key` or `api_key_env`, not both; the key never appears in error messages.
+  If the key is stored in the file, keep it private: `chmod 600 ~/.config/platui/config.yml`.
 - `tabs` — one tab per project state; by default the `cancelled` group is hidden (`hide_groups`) and the first tab is "All".
 - `filters` — up to 9 saved filters, switched with `F` or the command palette (digits are not used: they belong to tabs).
 - `gitlab` — merge requests go through `glab`; `host` and `repo` default to the `remote` URL (`branch.remote`, `origin`).
@@ -117,7 +118,7 @@ request and opens it in the browser (`Go to MR`).
 In the TUI such actions (bulk changes, state moves, deleting branches or todo items, running custom commands, overwriting
 a description changed in Plane) ask for confirmation in a `y/N` dialog: only `y`/`Y` confirms, anything else cancels.
 The CLI has a global `--yes` flag: with it destructive actions run without asking; without it the CLI asks `[y/N]`
-and, when stdin is not a terminal, refuses with "нужно подтверждение: --yes".
+and, when stdin is not a terminal, refuses with "confirmation required: --yes".
 
 ### Todo view
 

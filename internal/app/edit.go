@@ -10,7 +10,7 @@ import (
 	"github.com/thegriglat/platui/internal/text"
 )
 
-// CreateQuick создаёт задачу из строки "название !prio @user #label".
+// CreateQuick creates a task from the line "title !prio @user #label".
 func (a *App) CreateQuick(ctx context.Context, projectID, line, descMarkdown string) (plane.WorkItem, error) {
 	q, err := text.ParseQuick(line)
 	if err != nil {
@@ -51,7 +51,7 @@ func (a *App) CreateQuick(ctx context.Context, projectID, line, descMarkdown str
 	return a.d.API.CreateWorkItem(ctx, projectID, n)
 }
 
-// findMember: по DisplayName, затем по части Email до "@"; неоднозначно или нет — ErrUnknownMember.
+// findMember matches by DisplayName, then by the Email part before "@"; ambiguous or none: ErrUnknownMember.
 func findMember(ms []plane.Member, name string) (string, error) {
 	pick := func(match func(plane.Member) bool) (string, int) {
 		var id string
@@ -78,18 +78,18 @@ func findMember(ms []plane.Member, name string) (string, error) {
 	return id, nil
 }
 
-// Comment добавляет комментарий из Markdown.
+// Comment adds a comment from Markdown.
 func (a *App) Comment(ctx context.Context, projectID, itemID, markdown string) (plane.Comment, error) {
 	return a.d.API.CreateComment(ctx, projectID, itemID, text.MarkdownToHTML(markdown))
 }
 
-// SetDescription заменяет описание задачи (Markdown → HTML).
+// SetDescription replaces the task description (Markdown → HTML).
 func (a *App) SetDescription(ctx context.Context, projectID, itemID, markdown string) (plane.WorkItem, error) {
 	h := text.MarkdownToHTML(markdown)
 	return a.Update(ctx, projectID, itemID, plane.WorkItemPatch{DescHTML: &h})
 }
 
-// bulk применяет fn к задачам последовательно; после отмены ctx остаток — ctx.Err().
+// bulk applies fn to the tasks sequentially; after ctx is cancelled the rest get ctx.Err().
 func bulk[T any](ctx context.Context, xs []T, id func(T) string, fn func(T) error) map[string]error {
 	res := make(map[string]error, len(xs))
 	for _, x := range xs {
@@ -102,7 +102,7 @@ func bulk[T any](ctx context.Context, xs []T, id func(T) string, fn func(T) erro
 	return res
 }
 
-// BulkPatch применяет один патч к задачам.
+// BulkPatch applies one patch to the tasks.
 func (a *App) BulkPatch(ctx context.Context, projectID string, ids []string, p plane.WorkItemPatch) map[string]error {
 	return bulk(ctx, ids, func(s string) string { return s }, func(id string) error {
 		_, err := a.Update(ctx, projectID, id, p)
@@ -116,7 +116,7 @@ func (a *App) bulkList(ctx context.Context, projectID string, items []plane.Work
 		cur := get(it)
 		has := slices.Contains(cur, val)
 		if has == add {
-			return nil // уже в нужном состоянии
+			return nil // already in the desired state
 		}
 		var next []string
 		if add {
@@ -134,13 +134,13 @@ func (a *App) bulkList(ctx context.Context, projectID string, items []plane.Work
 	})
 }
 
-// BulkAssign добавляет или снимает исполнителя.
+// BulkAssign adds or removes an assignee.
 func (a *App) BulkAssign(ctx context.Context, projectID string, items []plane.WorkItem, memberID string, add bool) map[string]error {
 	return a.bulkList(ctx, projectID, items, func(it plane.WorkItem) []string { return it.AssigneeIDs },
 		func(p *plane.WorkItemPatch, l *[]string) { p.AssigneeIDs = l }, memberID, add)
 }
 
-// BulkLabel добавляет или снимает метку.
+// BulkLabel adds or removes a label.
 func (a *App) BulkLabel(ctx context.Context, projectID string, items []plane.WorkItem, labelID string, add bool) map[string]error {
 	return a.bulkList(ctx, projectID, items, func(it plane.WorkItem) []string { return it.LabelIDs },
 		func(p *plane.WorkItemPatch, l *[]string) { p.LabelIDs = l }, labelID, add)

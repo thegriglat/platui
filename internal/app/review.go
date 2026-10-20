@@ -10,13 +10,13 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// ReviewResult — итог «готово к ревью».
+// ReviewResult is the outcome of "ready for review".
 type ReviewResult struct {
 	MRURL, State string
 	Warnings     []string
 }
 
-// Review отправляет ветку, создаёт MR (GitLab), комментирует задачу и переводит её на ревью.
+// Review pushes the branch, creates an MR (GitLab), comments on the task and moves it to review.
 func (a *App) Review(ctx context.Context, p plane.Project, it plane.WorkItem) (ReviewResult, error) {
 	var res ReviewResult
 	g, err := a.git()

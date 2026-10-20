@@ -88,11 +88,11 @@ func Tree(items []plane.WorkItem) []*Node // порядок — как во вх
 | виды | `<`/`>` — ширина превью −/+5 % (20..80), `z` — превью на весь экран и обратно |
 | свои | клавиши из `cfg.Commands` (и все команды — в палитре `Ctrl+P` под названием) |
 
-- (4) Превью: строка «Ветка: +ins −del (n файлов)» по `app.DiffStat` (загрузка асинхронно при показе задачи, кэш в сессии на itemID+UpdatedAt; нет ветки — строки нет). Списка коммитов нет.
-- (5) Своя команда: `app.CommandVars` → `confirm` при `Confirm: true` → `app.RunCommand`; `output`: status — последняя непустая строка в статусе (код ≠ 0 — красным), window — экран с выводом (viewport, Esc), none — только «готово/ошибка». `func BuiltinKeys() []string` — экспорт: все клавиши реестра; `cmd/platui` вызывает `cfg.CheckCommandKeys(tui.BuiltinKeys())` до запуска TUI.
+- (4) Превью: строка «Branch: +ins −del (n files)» по `app.DiffStat` (загрузка асинхронно при показе задачи, кэш в сессии на itemID+UpdatedAt; нет ветки — строки нет). Списка коммитов нет.
+- (5) Своя команда: `app.CommandVars` → `confirm` при `Confirm: true` → `app.RunCommand`; `output`: status — последняя непустая строка в статусе (код ≠ 0 — красным), window — экран с выводом (viewport, Esc), none — только «готово/ошибка». `func BuiltinKeys() []string` — экспорт: все клавиши реестра; `main.go` вызывает `cfg.CheckCommandKeys(tui.BuiltinKeys())` до запуска TUI.
 - (7) Закладки — наверху таблицы текущего таба (☆ перед ID), в порядке добавления, затем остальные по сортировке; поиск — закладки не закрепляются.
 - (8) Диалог `n`: под строкой ввода — до 5 похожих задач проекта (`search` по заголовку введённого названия без токенов `!@#`), по мере ввода; Enter по-прежнему создаёт; `↓` — перейти к списку, Enter на похожей — открыть её вместо создания.
-- (10) `l`: `text.ExtractLinks(DescHTML)` + из всех комментариев; пусто — статус «ссылок нет».
+- (10) `l`: `text.ExtractLinks(DescHTML)` + из всех комментариев; пусто — статус «no links».
 - (13) Мышь (`cfg.MouseEnabled()` → `tea.WithMouseCellMotion()` в `Run`): клик по строке таблицы — курсор, двойной клик — карточка; клик по табу — таб; клик по панели — фокус; колёсико — прокрутка таблицы/превью под указателем.
 - (14) Ширина превью — `cfg.UI.PreviewWidth`, меняется `<`/`>` на сессию; `z` — превью на весь экран.
 - (15) Подзадачи: таблица строит `app.Tree` по видимым задачам; у родителя `▸ (n)`/`▾`, дети с отступом по `Depth`; по умолчанию свёрнуто; при активном поиске — плоский список.
@@ -128,7 +128,7 @@ todo:
 `type Todo struct{ Path string \`yaml:"path"\` }`; `func (c *Config) TodoPath() (string, error)`. Тест `TestContractConfigV6*`.
 
 ### C4 v7 — tui: вид Todo (PT-42)
-`T` — экран Todo (Scope "todo"; `Esc`/`q` — назад). Клавиши в нём: `↑/↓`, `n` — новый пункт строкой, `space` — выполнен/нет, `e` — правка строкой, `d` — удалить (confirm), `Shift+↑/↓` — переставить, `C` — сделать задачей Plane (`app.CreateQuick` с текстом пункта, затем к тексту пункта дописывается ` (PROJ-N)`), `Enter` на пункте с ключом (`todo.Keys`) — `app.Find` → карточка. Каждое изменение — `Save`; `ErrChanged` → статус «todo.md изменён вне platui — перечитан», `Load` заново, изменение не применено. Тест `TestContractTUIV7Todo*` на временном файле.
+`T` — экран Todo (Scope "todo"; `Esc`/`q` — назад). Клавиши в нём: `↑/↓`, `n` — новый пункт строкой, `space` — выполнен/нет, `e` — правка строкой, `d` — удалить (confirm), `Shift+↑/↓` — переставить, `C` — сделать задачей Plane (`app.CreateQuick` с текстом пункта, затем к тексту пункта дописывается ` (PROJ-N)`), `Enter` на пункте с ключом (`todo.Keys`) — `app.Find` → карточка. Каждое изменение — `Save`; `ErrChanged` → статус «todo.md changed outside platui — reloaded», `Load` заново, изменение не применено. Тест `TestContractTUIV7Todo*` на временном файле.
 
 ### C10 v3 — cli: `todo` (PT-43)
 `platui todo [ls]` — пункты `N. [x] текст`; `platui todo add <текст…>`; `platui todo done <N>`; `platui todo undone <N>`; путь — `cfg.TodoPath()`; конфиг без ключа API допустим для `todo` (ошибку ключа игнорировать, как не требующую сети). `ErrChanged` — повторить один раз (Load+применить+Save), снова — ошибка. Тест `TestContractCLITodo*`.
@@ -147,10 +147,10 @@ http:
   timeout: 30s   # таймаут одного запроса; по умолчанию 30s; 1s..5m
   retries: 3     # повторы 429/503; по умолчанию 3; 0..10
 ```
-`type HTTP struct{ Timeout *time.Duration; Retries *int }` (nil → умолчания); `cmd/platui` передаёт в `plane.Options{HTTPClient: &http.Client{Timeout}, MaxRetries}`. `plane.Options.MaxRetries`: 0 → 3 (умолчание, как в v2), **< 0 → без повторов**; `retries: 0` в конфиге → `MaxRetries: -1` (C3 v7, отчёт PT-47). Тест `TestContractConfigV7*`.
+`type HTTP struct{ Timeout *time.Duration; Retries *int }` (nil → умолчания); `main.go` передаёт в `plane.Options{HTTPClient: &http.Client{Timeout}, MaxRetries}`. `plane.Options.MaxRetries`: 0 → 3 (умолчание, как в v2), **< 0 → без повторов**; `retries: 0` в конфиге → `MaxRetries: -1` (C3 v7, отчёт PT-47). Тест `TestContractConfigV7*`.
 
 ### C10 v4 — cli: коды выхода (PT-48; GAP-3)
-0 — успех; 1 — прочая ошибка; 2 — использование; **3 — авторизация** (`plane.ErrUnauthorized`: «ключ API отклонён — проверьте api_key/api_key_env»); **4 — сеть/таймаут/5xx/429 после повторов** (`url.Error`, `net.Error`, `context.DeadlineExceeded`, `io.ErrUnexpectedEOF` и обрыв соединения, ошибки TLS/x509, `APIError.Status >= 500`, `ErrRateLimited`: «Plane недоступен: …»). Ключ — никогда в выводе. Тест `TestContractCLIExit*`.
+0 — успех; 1 — прочая ошибка; 2 — использование; **3 — авторизация** (`plane.ErrUnauthorized`: «API key rejected — check api_key/api_key_env»); **4 — сеть/таймаут/5xx/429 после повторов** (`url.Error`, `net.Error`, `context.DeadlineExceeded`, `io.ErrUnexpectedEOF` и обрыв соединения, ошибки TLS/x509, `APIError.Status >= 500`, `ErrRateLimited`: «Plane unreachable: …»). Ключ — никогда в выводе. Тест `TestContractCLIExit*`.
 
 ### C5 v7 — app: офлайн (PT-49; GAP-1 app, GAP-4)
 - `Me`, `Projects`, `Meta`: при сетевой ошибке (как в C10 v4, код 4-класса) — данные из Store (`<ws>/me`, `<ws>/projects`, `<ws>/meta/<pid>`; пишутся при каждом успешном получении), если есть; ошибка авторизации — не подменяется кэшем.
@@ -160,7 +160,7 @@ http:
 Тест `TestContractAppV7*`.
 
 ### C4 v8 — tui: офлайн и восстановление (PT-50; GAP-1 tui, 8, 9)
-- Старт без сети: `bootstrap` не падает на `Me`/`Projects`; при `app.Offline()` — статусная строка «офлайн, данные от ЧЧ:ММ» (постоянная, жёлтым), пока не будет успешного обновления.
-- Успешный опрос/`R` после ошибки — снять ошибку, статус «связь восстановлена» (один раз); фоновые ошибки не повторяются в статусе чаще одного раза на интервал опроса (`NextPoll`).
-- `$EDITOR`: при ошибке отправки описания/комментария текст не теряется — файл `EditSession` не удаляется, статус «не отправлено, текст сохранён: <путь>»; повтор той же клавишей предлагает «использовать сохранённый текст? y/N».
+- Старт без сети: `bootstrap` не падает на `Me`/`Projects`; при `app.Offline()` — статусная строка «offline, data from HH:MM» (постоянная, жёлтым), пока не будет успешного обновления.
+- Успешный опрос/`R` после ошибки — снять ошибку, статус «connection restored» (один раз); фоновые ошибки не повторяются в статусе чаще одного раза на интервал опроса (`NextPoll`).
+- `$EDITOR`: при ошибке отправки описания/комментария текст не теряется — файл `EditSession` не удаляется, статус «not sent, text saved: <path>»; повтор той же клавишей предлагает «Use the saved text? y/N».
 Тест `TestContractTUIV8*`; GAP-тесты PT-45 `TestFailureTUI*` — без Skip.

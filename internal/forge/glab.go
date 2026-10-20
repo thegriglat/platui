@@ -11,20 +11,20 @@ import (
 
 var urlRe = regexp.MustCompile(`https?://\S+`)
 
-// Options — настройки GitLab-инструмента.
+// Options configures the GitLab tool.
 type Options struct {
-	Glab string // бинарь; "" → "glab"
-	Host string // "" — не задавать; иначе env GITLAB_HOST=<Host>
-	Repo string // "" — из remote каталога; иначе -R <Repo>
+	Glab string // binary; "" → "glab"
+	Host string // "" — leave unset; otherwise env GITLAB_HOST=<Host>
+	Repo string // "" — from the directory's remote; otherwise -R <Repo>
 	Run  Runner // nil → ExecRunner()
 }
 
-// GitLab реализует Tool через glab.
+// GitLab implements Tool via glab.
 type GitLab struct{ o Options }
 
 var _ Tool = (*GitLab)(nil)
 
-// New создаёт инструмент GitLab.
+// New creates the GitLab tool.
 func New(o Options) *GitLab {
 	if o.Glab == "" {
 		o.Glab = "glab"
@@ -61,7 +61,7 @@ func exists(out string, err error) bool {
 	return err != nil && strings.Contains(strings.ToLower(err.Error()+out), "already exists")
 }
 
-// CreateMR создаёт MR; если он уже есть — возвращает URL существующего.
+// CreateMR creates an MR; if one already exists, it returns the existing URL.
 func (g *GitLab) CreateMR(ctx context.Context, r MRRequest) (string, error) {
 	args := []string{"mr", "create", "--source-branch", r.Head, "--title", r.Title, "--description", r.Body}
 	if r.Target != "" {

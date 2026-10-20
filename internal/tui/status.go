@@ -21,12 +21,12 @@ func (s *session) statusView(width int) string {
 		switch {
 		case txt == "":
 			txt = s.net.offlineText()
-		case !strings.Contains(txt, "офлайн"):
+		case !strings.Contains(txt, "offline"):
 			txt = s.net.offlineText() + " | " + txt
 		}
 	}
 	if s.loading {
-		txt, st = "⟳ загрузка… "+txt, s.st.warn
+		txt, st = "⟳ loading… "+txt, s.st.warn
 	}
 	return st.Render(clip(txt, width))
 }

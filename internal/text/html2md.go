@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// brMark — внутренняя метка переноса строки <br> до финальной сборки абзаца.
+// brMark is an internal marker for a <br> line break until the paragraph is finally assembled.
 const brMark = "\x00"
 
 var blockTags = map[string]bool{
@@ -13,15 +13,15 @@ var blockTags = map[string]bool{
 	"ul": true, "ol": true, "blockquote": true, "pre": true, "hr": true, "table": true,
 }
 
-// HTMLToMarkdown переводит HTML описания в Markdown для правки в $EDITOR.
-// Поддержаны p, br, h1–h6, strong/b, em/i, s/del, code, pre, a, ul/ol/li,
-// blockquote, hr, а также img и таблицы; прочие теги дают только текст.
+// HTMLToMarkdown converts a description's HTML to Markdown for editing in $EDITOR.
+// Supported: p, br, h1–h6, strong/b, em/i, s/del, code, pre, a, ul/ol/li,
+// blockquote, hr, as well as img and tables; other tags yield text only.
 func HTMLToMarkdown(h string) string {
 	root := parseHTML(h)
 	return strings.TrimSpace(strings.Join(flow(root.children), "\n\n"))
 }
 
-// flow собирает блоки Markdown из последовательности узлов.
+// flow builds Markdown blocks from a sequence of nodes.
 func flow(nodes []*node) []string {
 	var blocks []string
 	var cur strings.Builder
@@ -120,7 +120,7 @@ var (
 	numListRe   = regexp.MustCompile(`^(\d+)([.)])(\s|$)`)
 )
 
-// escapeLineStarts экранирует начала строк, которые стали бы разметкой блока.
+// escapeLineStarts escapes line starts that would otherwise become block markup.
 func escapeLineStarts(s string) string {
 	lines := strings.Split(s, "\n")
 	for i, l := range lines {

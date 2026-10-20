@@ -8,7 +8,7 @@ import (
 
 func init() {
 	t := []string{"todo"}
-	registerAction(action{ID: "view.todo", Title: "Личный todo", Group: "виды", Keys: []string{"T"},
+	registerAction(action{ID: "view.todo", Title: "Personal todo", Group: "views", Keys: []string{"T"},
 		Hint: "todo", Scopes: []string{"main"}, Run: func(m *model) tea.Cmd {
 			path, err := m.s.deps.Config.TodoPath()
 			if err != nil {
@@ -22,16 +22,16 @@ func init() {
 			}
 			return pushScreen(newTodoScreen(path, l))
 		}})
-	// Справочные записи: клавиши обрабатывает сам экран (Run == nil).
+	// Reference entries: the keys are handled by the screen itself (Run == nil).
 	for _, a := range []action{
-		{ID: "todo.nav", Title: "Курсор", Keys: []string{"up", "down", "pgup", "pgdown", "home", "end"}, Hint: "↑↓|ход"},
-		{ID: "todo.new", Title: "Новый пункт", Keys: []string{"n"}, Hint: "новый"},
-		{ID: "todo.done", Title: "Выполнен / нет", Keys: []string{"space"}, Hint: "отметка"},
-		{ID: "todo.edit", Title: "Править пункт", Keys: []string{"e"}, Hint: "правка"},
-		{ID: "todo.delete", Title: "Удалить пункт (с подтверждением)", Keys: []string{"d"}, Hint: "удалить"},
-		{ID: "todo.move", Title: "Переставить пункт", Keys: []string{"shift+up", "shift+down"}, Hint: "Shift+↑↓|порядок"},
-		{ID: "todo.task", Title: "Сделать задачей Plane", Keys: []string{"C"}, Hint: "в задачу"},
-		{ID: "todo.open", Title: "Перейти к задаче из пункта", Keys: []string{"enter"}, Hint: "к задаче"},
+		{ID: "todo.nav", Title: "Cursor", Keys: []string{"up", "down", "pgup", "pgdown", "home", "end"}, Hint: "↑↓|move"},
+		{ID: "todo.new", Title: "New item", Keys: []string{"n"}, Hint: "new"},
+		{ID: "todo.done", Title: "Done / not done", Keys: []string{"space"}, Hint: "toggle"},
+		{ID: "todo.edit", Title: "Edit item", Keys: []string{"e"}, Hint: "edit"},
+		{ID: "todo.delete", Title: "Delete item (with confirmation)", Keys: []string{"d"}, Hint: "delete"},
+		{ID: "todo.move", Title: "Reorder item", Keys: []string{"shift+up", "shift+down"}, Hint: "Shift+↑↓|order"},
+		{ID: "todo.task", Title: "Make a Plane task", Keys: []string{"C"}, Hint: "to task"},
+		{ID: "todo.open", Title: "Go to the task from the item", Keys: []string{"enter"}, Hint: "to task"},
 	} {
 		a.Group, a.Scopes = "todo", t
 		registerAction(a)

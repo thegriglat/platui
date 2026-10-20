@@ -43,7 +43,7 @@ func New(o Options) (*http.Client, error)
 - Пул: `x509.SystemCertPool()`; ошибка или nil → `x509.NewCertPool()`; затем `AppendCertsFromPEM(содержимое CAFile)`.
 - Файл не читается → ошибка `http.ca_file: <путь>: <причина>`; нет ни одного сертификата PEM → `http.ca_file: <путь>: no PEM certificates found`.
 - Транспорт — `http.DefaultTransport.(*http.Transport).Clone()`, `TLSClientConfig = &tls.Config{RootCAs: pool, MinVersion: tls.VersionTLS12}`; при пустом CAFile `TLSClientConfig` не задаётся (поведение как сейчас).
-- `cmd/platui/main.go` `build`: клиент Plane — `httpclient.New(httpclient.Options{Timeout: cfg.HTTPTimeout(), CAFile: cfg.HTTPCAFile()})`, ошибка возвращается из `build`.
+- `main.go` `build`: клиент Plane — `httpclient.New(httpclient.Options{Timeout: cfg.HTTPTimeout(), CAFile: cfg.HTTPCAFile()})`, ошибка возвращается из `build`.
 
 ## C10 v5 / C4 v9. Подсказка при ошибке сертификата
 
@@ -51,7 +51,7 @@ func New(o Options) (*http.Client, error)
 // internal/app
 func IsCertError(err error) bool // x509.UnknownAuthorityError, x509.CertificateInvalidError, x509.HostnameError,
                                  // *tls.CertificateVerificationError; по тексту — "x509:"
-const CertHint = "сертификат сервера не доверен — укажите CA в http.ca_file"
+const CertHint = "server certificate is not trusted — set the CA in http.ca_file"
 ```
 - `IsNetworkError` не меняется (ошибка сертификата остаётся сетевой: exit 4, офлайн с кэша).
 - CLI (`internal/cli`): при `IsCertError` — `platui: Plane недоступен: <err>` и следующей строкой `platui: <CertHint>`; код 4.

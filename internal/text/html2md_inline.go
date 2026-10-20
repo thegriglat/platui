@@ -21,13 +21,13 @@ func inlineAll(nodes []*node) string {
 	return b.String()
 }
 
-// inline переводит узел в строчный Markdown (с brMark вместо переносов).
+// inline converts a node to inline Markdown (with brMark instead of line breaks).
 func inline(n *node) string {
 	switch n.tag {
 	case "":
 		return mdEscape.Replace(wsRe.ReplaceAllStringFunc(n.text, func(w string) string {
 			if strings.Contains(w, "\n") {
-				return "\n" // мягкий перенос строки сохраняем
+				return "\n" // keep soft line breaks
 			}
 			return " "
 		}))
@@ -57,7 +57,7 @@ func inline(n *node) string {
 	return inlineAll(n.children)
 }
 
-// wrap оборачивает текст маркером, вынося пробелы по краям наружу.
+// wrap surrounds text with a marker, moving edge whitespace outside.
 func wrap(mark, inner string) string {
 	core := strings.Trim(inner, " ")
 	if core == "" {
@@ -103,15 +103,15 @@ func linkDest(d string) string {
 	return d
 }
 
-// tidyInline превращает накопленный строчный текст в абзац: края обрезаны,
-// метки переносов — в "\"+"\n".
+// tidyInline turns accumulated inline text into a paragraph: edges trimmed,
+// break markers → "\"+"\n".
 func tidyInline(s string) string {
 	s = strings.Trim(s, " \n"+brMark)
 	s = brSpceRe.ReplaceAllString(s, "\\\n")
 	return strings.TrimSpace(nlSpaceRe.ReplaceAllString(s, "\n"))
 }
 
-// oneLine — строчный текст в одну строку (заголовки, ячейки).
+// oneLine is inline text on a single line (headings, cells).
 func oneLine(s string) string {
 	return strings.TrimSpace(wsRe.ReplaceAllString(strings.ReplaceAll(s, brMark, " "), " "))
 }

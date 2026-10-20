@@ -10,14 +10,14 @@ import (
 
 type tabInfo struct {
 	label string
-	state *plane.State // nil — «Все»
+	state *plane.State // nil — "All"
 }
 
-// tabList — «Все» (если включён) и состояния-табы.
+// tabList is "All" (if enabled) and the state tabs.
 func (s *session) tabList() []tabInfo {
 	var out []tabInfo
 	if s.deps.Config.TabsAll() {
-		out = append(out, tabInfo{label: "Все"})
+		out = append(out, tabInfo{label: "All"})
 	}
 	for i := range s.tabs {
 		out = append(out, tabInfo{label: s.tabs[i].Name, state: &s.tabs[i]})
@@ -36,7 +36,7 @@ func (s *session) inTab(it plane.WorkItem, t tabInfo) bool {
 	return slices.ContainsFunc(s.tabs, func(st plane.State) bool { return st.ID == it.StateID })
 }
 
-// pass — фильтры «Мои», сохранённый фильтр и поиск (без учёта таба).
+// pass applies the "Mine" filters, the saved filter and the search (regardless of the tab).
 func (s *session) pass(it plane.WorkItem) bool {
 	if s.mine && !slices.Contains(it.AssigneeIDs, s.me.ID) {
 		return false
@@ -52,7 +52,7 @@ func (s *session) pass(it plane.WorkItem) bool {
 	return true
 }
 
-// visible — задачи текущего таба с учётом mine/filter/query/sortBy.
+// visible returns the current tab tasks with mine/filter/query/sortBy applied.
 func (s *session) visible() []plane.WorkItem {
 	tl := s.tabList()
 	if s.tab >= len(tl) {
@@ -72,7 +72,7 @@ func (s *session) visible() []plane.WorkItem {
 	return out
 }
 
-// tabCount — число задач таба i с учётом mine/filter/query.
+// tabCount is the number of tab i tasks with mine/filter/query applied.
 func (s *session) tabCount(i int) int {
 	tl := s.tabList()
 	if i < 0 || i >= len(tl) {
@@ -109,12 +109,12 @@ func (s *session) sortItems(l []plane.WorkItem) {
 	}
 }
 
-// tabsLayout — раскладка строки табов: единственный источник и для tabsLine, и для мыши (tabSpans).
+// tabsLayout is the tab line layout: the single source for both tabsLine and the mouse (tabSpans).
 type tabsLayout struct {
-	prefix string   // идентификатор проекта
-	right  string   // признаки «Мои» и фильтра
-	cells  []string // отрисованные табы (все)
-	lo, hi int      // окно показанных табов, включительно
+	prefix string   // project identifier
+	right  string   // "Mine" and filter marks
+	cells  []string // rendered tabs (all)
+	lo, hi int      // window of shown tabs, inclusive
 }
 
 func (s *session) tabsLayout(width int) tabsLayout {
@@ -125,10 +125,10 @@ func (s *session) tabsLayout(width int) tabsLayout {
 	l := tabsLayout{prefix: s.st.accent.Bold(true).Render(" " + ident + " ")}
 	var marks []string
 	if s.mine {
-		marks = append(marks, "[Мои]")
+		marks = append(marks, "[Mine]")
 	}
 	if cf := s.deps.Config.Filters; s.filter >= 1 && s.filter <= len(cf) {
-		marks = append(marks, "[фильтр: "+cf[s.filter-1].Name+"]")
+		marks = append(marks, "[filter: "+cf[s.filter-1].Name+"]")
 	}
 	l.right = strings.Join(marks, " ")
 	avail := width - lipglossWidth(l.prefix) - lipglossWidth(l.right) - 1
@@ -163,7 +163,7 @@ func (s *session) tabsLayout(width int) tabsLayout {
 	return l
 }
 
-// tabsLine — строка табов со счётчиками, признаками «Мои» и фильтра.
+// tabsLine is the tab line with counters and the "Mine" and filter marks.
 func tabsLine(s *session, width int) string {
 	l := s.tabsLayout(width)
 	line := l.prefix

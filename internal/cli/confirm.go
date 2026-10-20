@@ -7,12 +7,13 @@ import (
 	"strings"
 )
 
-// errNeedConfirm — нет подтверждения: stdin не терминал, флаг --yes не задан.
-var errNeedConfirm = errors.New("нужно подтверждение: --yes")
+// errNeedConfirm means no confirmation: stdin is not a terminal and --yes is not set.
+var errNeedConfirm = errors.New("confirmation required: --yes")
 
-// confirm — правило подтверждения деструктивных действий (C10 v2).
-// --yes → true без вопроса; без TTY — ошибка; иначе вопрос «question [y/N] »
-// в Stderr и ответ из Stdin (только y/yes без учёта регистра → true).
+// confirm applies the confirmation rule for destructive actions (C10 v2).
+// --yes → true without asking; no TTY → error; otherwise it prints
+// "question [y/N] " to Stderr and reads the answer from Stdin (only y/yes,
+// case-insensitive, → true).
 func confirm(env Env, question string) (bool, error) {
 	if env.Yes {
 		return true, nil

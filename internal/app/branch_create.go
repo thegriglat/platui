@@ -8,9 +8,9 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// Branch создает ветку задачи (или worktree) без изменений в Plane (клавиша b, C5 v4).
-// name пусто — BranchName; worktree nil — cfg.Branch.Worktree; существующая ветка
-// переключается только при switchExisting, иначе — Result{Name} и ErrBranchExists.
+// Branch creates a task branch (or worktree) without changes in Plane (the b key, C5 v4).
+// Empty name means BranchName; nil worktree means cfg.Branch.Worktree; an existing branch
+// is switched to only with switchExisting, otherwise it returns Result{Name} and ErrBranchExists.
 func (a *App) Branch(p plane.Project, it plane.WorkItem, name string, worktree *bool, switchExisting bool) (gitbranch.Result, error) {
 	g, err := a.git()
 	if err != nil {

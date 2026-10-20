@@ -4,7 +4,7 @@ import "slices"
 
 func (a *App) bookmarkKey(projectID string) string { return a.key("bookmarks", projectID) }
 
-// Bookmarks — ID закладок проекта в порядке добавления.
+// Bookmarks returns the project's bookmarked IDs in the order they were added.
 func (a *App) Bookmarks(projectID string) []string {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -20,8 +20,8 @@ func (a *App) bookmarksLocked(projectID string) []string {
 	return ids
 }
 
-// ToggleBookmark ставит/снимает закладку; on — закладка стоит после вызова.
-// Сбой записи в кэш возвращается ошибкой, состояние в памяти сохраняется.
+// ToggleBookmark sets or clears a bookmark; on reports whether it is set after the call.
+// A cache write failure is returned as an error; the in-memory state is kept.
 func (a *App) ToggleBookmark(projectID, itemID string) (bool, error) {
 	a.mu.Lock()
 	defer a.mu.Unlock()

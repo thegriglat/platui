@@ -14,13 +14,13 @@ type timerRec struct {
 	Started   time.Time `json:"started"`
 }
 
-// Timer — запущенный таймер задачи.
+// Timer is a running task timer.
 type Timer struct {
 	ProjectID, ItemID string
 	Started           time.Time
 }
 
-// loadTimers лениво читает таймеры из Store. Вызывать под a.mu.
+// loadTimers lazily reads timers from the Store. Call under a.mu.
 func (a *App) loadTimers() {
 	if a.timers != nil {
 		return
@@ -34,10 +34,10 @@ func (a *App) loadTimers() {
 	}
 }
 
-// saveTimers пишет таймеры в Store. Вызывать под a.mu.
+// saveTimers writes timers to the Store. Call under a.mu.
 func (a *App) saveTimers() { a.save(a.key("timers"), a.timers) }
 
-// StartTimer запускает таймер; уже идёт — ничего не меняет.
+// StartTimer starts a timer; if one is already running, nothing changes.
 func (a *App) StartTimer(projectID, itemID string) error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -50,7 +50,7 @@ func (a *App) StartTimer(projectID, itemID string) error {
 	return nil
 }
 
-// Timers — запущенные таймеры по времени старта.
+// Timers returns the running timers by start time.
 func (a *App) Timers() []Timer {
 	a.mu.Lock()
 	defer a.mu.Unlock()
@@ -78,7 +78,7 @@ func compareStr(a, b string) int {
 	return 0
 }
 
-// StopTimer комментирует затраченное время и удаляет таймер (только после успешного комментария).
+// StopTimer comments the time spent and removes the timer (only after a successful comment).
 func (a *App) StopTimer(ctx context.Context, projectID, itemID, note string) (time.Duration, error) {
 	a.mu.Lock()
 	a.loadTimers()
@@ -88,7 +88,7 @@ func (a *App) StopTimer(ctx context.Context, projectID, itemID, note string) (ti
 		return 0, ErrNoTimer
 	}
 	d := max((a.d.Now().Sub(r.Started) + time.Minute - 1).Truncate(time.Minute), time.Minute)
-	h := fmt.Sprintf("<p>Затрачено: %s</p>", FormatDuration(d))
+	h := fmt.Sprintf("<p>Time spent: %s</p>", FormatDuration(d))
 	if note != "" {
 		h += text.MarkdownToHTML(note)
 	}

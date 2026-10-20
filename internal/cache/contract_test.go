@@ -49,10 +49,10 @@ func TestContractCacheKeysAndSubdirs(t *testing.T) {
 	s := NewFileStore(dir)
 	for _, k := range []string{"", "a b", "../x", "a//b", "/a", "a/", "a/./b", "ü", ".."} {
 		if err := s.Save(k, 1); err == nil {
-			t.Errorf("Save(%q) без ошибки", k)
+			t.Errorf("Save(%q) returned no error", k)
 		}
 		if _, _, err := s.Load(k, new(int)); err == nil {
-			t.Errorf("Load(%q) без ошибки", k)
+			t.Errorf("Load(%q) returned no error", k)
 		}
 	}
 	if err := s.Save("proj/a.b-c_1", 5); err != nil {
@@ -77,10 +77,10 @@ func TestContractCachePermsAtomic(t *testing.T) {
 	}
 	tmps, _ := filepath.Glob(filepath.Join(dir, "d", "a", "*.tmp"))
 	if len(tmps) != 0 {
-		t.Fatalf("tmp остался: %v", tmps)
+		t.Fatalf("tmp left behind: %v", tmps)
 	}
 	if err := s.Save("f", make(chan int)); err == nil {
-		t.Error("ожидалась ошибка маршалинга")
+		t.Error("expected a marshal error")
 	}
 }
 
@@ -89,15 +89,15 @@ func TestContractCacheSaveErrors(t *testing.T) {
 	f := filepath.Join(dir, "file")
 	os.WriteFile(f, nil, 0o600)
 	if err := NewFileStore(f).Save("k", 1); err == nil {
-		t.Error("ожидалась ошибка MkdirAll")
+		t.Error("expected a MkdirAll error")
 	}
 	os.Mkdir(filepath.Join(dir, "k.json"), 0o700)
 	os.WriteFile(filepath.Join(dir, "k.json", "x"), nil, 0o600)
 	if err := NewFileStore(dir).Save("k", 1); err == nil {
-		t.Error("ожидалась ошибка rename")
+		t.Error("expected a rename error")
 	}
 	if _, _, err := NewFileStore(dir).Load("k", new(int)); err == nil {
-		t.Error("ожидалась ошибка чтения каталога")
+		t.Error("expected a directory read error")
 	}
 }
 
@@ -116,10 +116,10 @@ func TestContractCacheMem(t *testing.T) {
 		t.Fatal(got, saved, ok, err)
 	}
 	if m.Save("bad key", 1) == nil || m.Save("k", make(chan int)) == nil {
-		t.Error("ожидались ошибки")
+		t.Error("expected errors")
 	}
 	if _, _, err := m.Load("bad key", &got); err == nil {
-		t.Error("ключ")
+		t.Error("key")
 	}
 	if NewMem(nil).Save("k", 1) != nil {
 		t.Error("nil now")

@@ -42,7 +42,7 @@ type statusMsg struct {
 }
 type pollMsg struct{}
 
-// bootMsg — итог старта: пользователь, проекты, выбранный проект и задача.
+// bootMsg is the startup result: user, projects, selected project and task.
 type bootMsg struct {
 	me       plane.Member
 	projects []plane.Project
@@ -50,11 +50,11 @@ type bootMsg struct {
 	itemID   string
 	warn     error
 	err      error
-	offline  bool // данные из кэша (app.Offline)
+	offline  bool // data from the cache (app.Offline)
 	offAt    time.Time
 }
 
-// openProjectMsg — переключение проекта (itemID — задача для курсора).
+// openProjectMsg switches the project (itemID is the task for the cursor).
 type openProjectMsg struct {
 	project plane.Project
 	itemID  string
@@ -124,7 +124,7 @@ func loadMeta(s *session) tea.Cmd {
 	}
 }
 
-// loadItems: useCache — сначала кэш (fromCache), затем обновление из API.
+// loadItems: useCache — cache first (fromCache), then refresh from the API.
 func loadItems(s *session, useCache bool) tea.Cmd {
 	if s.project == nil {
 		return nil
@@ -147,7 +147,7 @@ func loadItems(s *session, useCache bool) tea.Cmd {
 	return tea.Batch(cached, refresh)
 }
 
-// reload — app.Reload в обход кэша: metaMsg + itemsMsg{reload:true}.
+// reload is app.Reload bypassing the cache: metaMsg + itemsMsg{reload:true}.
 func reload(s *session) tea.Cmd {
 	if s.project == nil {
 		return nil
@@ -176,7 +176,7 @@ func loadBranches(s *session) tea.Cmd {
 	}
 }
 
-// loadItem перечитывает задачу (app.Item) → itemMsg.
+// loadItem re-reads a task (app.Item) → itemMsg.
 func loadItem(s *session, pid, id string) tea.Cmd {
 	a := s.deps.App
 	return func() tea.Msg {
@@ -185,7 +185,7 @@ func loadItem(s *session, pid, id string) tea.Cmd {
 	}
 }
 
-// loadComments загружает комментарии (app.Comments) → commentsMsg.
+// loadComments loads comments (app.Comments) → commentsMsg.
 func loadComments(s *session, pid, id string) tea.Cmd {
 	a := s.deps.App
 	return func() tea.Msg {
@@ -194,7 +194,7 @@ func loadComments(s *session, pid, id string) tea.Cmd {
 	}
 }
 
-// patchItem обновляет задачу (app.Update) → itemMsg с новой задачей; ошибка → statusMsg.
+// patchItem updates a task (app.Update) → itemMsg with the new task; error → statusMsg.
 func patchItem(s *session, id string, p plane.WorkItemPatch) tea.Cmd {
 	if s.project == nil {
 		return nil

@@ -1,21 +1,21 @@
 package tui
 
-// cursorList — курсор и прокрутка списка: ↑/↓, PgUp/PgDn, Home/End.
+// cursorList is a list cursor with scrolling: ↑/↓, PgUp/PgDn, Home/End.
 type cursorList struct{ n, pos, top, h int }
 
 func (c *cursorList) SetLen(n int)    { c.n = n; c.clamp() }
 func (c *cursorList) SetHeight(h int) { c.h = max(h, 1); c.clamp() }
 
-// Pos — позиция курсора (0 при пустом списке).
+// Pos is the cursor position (0 for an empty list).
 func (c *cursorList) Pos() int { return c.pos }
 
-// Set ставит курсор на позицию i.
+// Set puts the cursor at position i.
 func (c *cursorList) Set(i int) { c.pos = i; c.clamp() }
 
-// Move сдвигает курсор на d строк.
+// Move shifts the cursor by d rows.
 func (c *cursorList) Move(d int) { c.pos += d; c.clamp() }
 
-// Key обрабатывает клавишу навигации; false — клавиша не навигационная.
+// Key handles a navigation key; false means the key is not a navigation key.
 func (c *cursorList) Key(k string) bool {
 	switch k {
 	case "up":
@@ -36,7 +36,7 @@ func (c *cursorList) Key(k string) bool {
 	return true
 }
 
-// Range — полуинтервал видимых строк [from, to).
+// Range is the half-open interval of visible rows [from, to).
 func (c *cursorList) Range() (from, to int) { return c.top, min(c.top+c.h, c.n) }
 
 func (c *cursorList) clamp() {

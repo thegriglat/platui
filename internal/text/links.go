@@ -8,8 +8,8 @@ import (
 
 var urlRe = xurls.Strict()
 
-// ExtractLinks возвращает http/https-ссылки из HTML: href у <a> и голые URL
-// в тексте; без дублей, в порядке появления.
+// ExtractLinks returns http/https links from HTML: the href of <a> and bare URLs
+// in text; no duplicates, in order of appearance.
 func ExtractLinks(html string) []string {
 	var out []string
 	seen := map[string]bool{}

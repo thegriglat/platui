@@ -13,7 +13,7 @@ import (
 	"github.com/thegriglat/platui/internal/app"
 )
 
-// handle обрабатывает сообщения загрузки; остальные игнорирует.
+// handle processes load messages; others are ignored.
 func (s *session) handle(msg tea.Msg) tea.Cmd {
 	switch msg := msg.(type) {
 	case bootMsg:
@@ -84,7 +84,7 @@ func (s *session) onBoot(b bootMsg) tea.Cmd {
 		return pushScreen(newProjects(s))
 	}
 	if b.warn == nil {
-		s.setStatus("проект не выбран", false)
+		s.setStatus("no project selected", false)
 	}
 	return nil
 }
@@ -116,20 +116,20 @@ func (s *session) onItems(msg itemsMsg) tea.Cmd {
 		back := s.restored()
 		switch {
 		case msg.reload:
-			t := fmt.Sprintf("обновлено: %d задач, %s", len(msg.items), s.deps.Now().Format("15:04"))
+			t := fmt.Sprintf("updated: %d tasks, %s", len(msg.items), s.deps.Now().Format("15:04"))
 			if back {
-				t = "связь восстановлена; " + t
+				t = "connection restored; " + t
 			}
 			s.setStatus(t, false)
 		case wasPoll && !msg.changes.Empty():
-			t := fmt.Sprintf("изменения: +%d новых, %d обновлено, %d удалено",
+			t := fmt.Sprintf("changes: +%d new, %d updated, %d removed",
 				len(msg.changes.New), len(msg.changes.Updated), len(msg.changes.Removed))
 			if back {
-				t = "связь восстановлена; " + t
+				t = "connection restored; " + t
 			}
 			s.setStatus(t, false)
 		case back:
-			s.setStatus("связь восстановлена", false)
+			s.setStatus("connection restored", false)
 		}
 	}
 	s.items = msg.items
@@ -161,7 +161,7 @@ func (s *session) markFresh(ch app.Changes, notify bool) {
 	}
 }
 
-// schedulePoll ставит следующий опрос; цепочка создаётся один раз.
+// schedulePoll schedules the next poll; the chain is created once.
 func (s *session) schedulePoll(err error, wasPoll bool) tea.Cmd {
 	base := s.deps.Config.RefreshInterval()
 	if base <= 0 || (s.pollArmed && !wasPoll) {

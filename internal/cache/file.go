@@ -9,12 +9,12 @@ import (
 	"github.com/google/renameio/v2"
 )
 
-// FileStore хранит значения в <Dir>/<key>.json.
+// FileStore keeps values in <Dir>/<key>.json.
 type FileStore struct{ Dir string }
 
 var _ Store = (*FileStore)(nil)
 
-// NewFileStore создаёт хранилище; каталог создаётся при первом Save.
+// NewFileStore creates a store; the directory is created on the first Save.
 func NewFileStore(dir string) *FileStore { return &FileStore{Dir: dir} }
 
 type envelope struct {
@@ -27,7 +27,7 @@ func (s *FileStore) path(key string) string {
 	return filepath.Join(s.Dir, filepath.FromSlash(key)+".json")
 }
 
-// Load читает значение; отсутствие, порча и чужая версия дают ok=false.
+// Load reads a value; a missing file, corruption or a foreign version give ok=false.
 func (s *FileStore) Load(key string, v any) (time.Time, bool, error) {
 	if err := checkKey(key); err != nil {
 		return time.Time{}, false, err
@@ -49,7 +49,7 @@ func (s *FileStore) Load(key string, v any) (time.Time, bool, error) {
 	return e.Saved, true, nil
 }
 
-// Save атомарно записывает значение (renameio: temp+fsync+rename, права 0600).
+// Save writes a value atomically (renameio: temp+fsync+rename, mode 0600).
 func (s *FileStore) Save(key string, v any) error {
 	if err := checkKey(key); err != nil {
 		return err

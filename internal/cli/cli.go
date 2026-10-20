@@ -1,4 +1,4 @@
-// Package cli — режим без интерфейса и разбор командной строки (контракт C10 v1).
+// Package cli implements headless mode and command-line parsing (contract C10 v1).
 package cli
 
 import (
@@ -15,32 +15,32 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// Version задаётся -ldflags "-X github.com/thegriglat/platui/internal/cli.Version=…".
+// Version is set via -ldflags "-X github.com/thegriglat/platui/internal/cli.Version=…".
 var Version = "dev"
 
-// StartAt — куда открыть TUI.
+// StartAt is where to open the TUI.
 type StartAt struct{ Project, Item string }
 
-// Env — внешние зависимости CLI.
+// Env holds the CLI's external dependencies.
 type Env struct {
 	Stdout, Stderr io.Writer
 	Getenv         func(string) string
 	Getwd          func() (string, error)
-	Stdin          io.Reader   // ответы на вопросы подтверждения
-	IsTTY          func() bool // stdin — терминал
-	Yes            bool        // глобальный флаг --yes (заполняется разбором)
+	Stdin          io.Reader   // answers to confirmation prompts
+	IsTTY          func() bool // stdin is a terminal
+	Yes            bool        // global --yes flag (filled in by parsing)
 	Build          func(cfg *config.Config, repoDir string) (*app.App, error)
 	RunTUI         func(a *app.App, cfg *config.Config, start StartAt) error
 }
 
-// usageError — ошибка использования (код 2).
+// usageError is a usage error (exit code 2).
 type usageError struct{ msg string }
 
 func (e usageError) Error() string { return e.msg }
 
 func usagef(format string, a ...any) error { return usageError{fmt.Sprintf(format, a...)} }
 
-// session — состояние одного запуска.
+// session is the state of a single run.
 type session struct {
 	ctx context.Context
 	env Env
@@ -99,7 +99,7 @@ func (s *session) load() (*app.App, error) {
 	return a, nil
 }
 
-// projectIdent — ключ проекта: --project, иначе default_project.
+// projectIdent is the project key: --project, else default_project.
 func (s *session) projectIdent() string {
 	if s.project != "" {
 		return s.project
@@ -157,7 +157,7 @@ func newRoot(s *session) *cobra.Command {
 	return root
 }
 
-// Run выполняет platui с аргументами args и возвращает код выхода.
+// Run executes platui with args and returns the exit code.
 func Run(ctx context.Context, args []string, env Env) int {
 	if env.Stdout == nil {
 		env.Stdout = io.Discard
@@ -188,10 +188,10 @@ func Run(ctx context.Context, args []string, env Env) int {
 	}
 	switch {
 	case errors.Is(err, plane.ErrUnauthorized):
-		fmt.Fprintf(env.Stderr, "platui: ключ API отклонён — проверьте api_key/api_key_env (%v)\n", err)
+		fmt.Fprintf(env.Stderr, "platui: API key rejected — check api_key/api_key_env (%v)\n", err)
 		return 3
 	case app.IsNetworkError(err):
-		fmt.Fprintf(env.Stderr, "platui: Plane недоступен: %v\n", err)
+		fmt.Fprintf(env.Stderr, "platui: Plane unreachable: %v\n", err)
 		if app.IsCertError(err) {
 			fmt.Fprintf(env.Stderr, "platui: %s\n", app.CertHint)
 		}

@@ -19,7 +19,7 @@ workflow:
   start_state: Doing
   review_state: Review
 filters:
-  - name: Мои
+  - name: Mine
     mine: true
     state_groups: [started]
     priorities: [urgent, high]
@@ -48,7 +48,7 @@ func TestContractConfigV2Full(t *testing.T) {
 	want := Config{
 		Branch:   Branch{Worktree: true, WorktreeDir: "../{repo}-{branch}", CommitTemplate: "{identifier}-{sequence}: {title}", Remote: "upstream"},
 		Workflow: Workflow{"Doing", "Review"},
-		Filters:  []Filter{{Name: "Мои", Mine: true, StateGroups: []string{"started"}, Priorities: []string{"urgent", "high"}, Text: "bug"}},
+		Filters:  []Filter{{Name: "Mine", Mine: true, StateGroups: []string{"started"}, Priorities: []string{"urgent", "high"}, Text: "bug"}},
 		Theme:    Theme{true, map[string]string{"accent": "#abcdef", "muted": "123"}},
 		Editor:   "nano",
 		Refresh:  Refresh{&d, &f},

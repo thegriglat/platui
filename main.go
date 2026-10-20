@@ -1,4 +1,4 @@
-// Command platui — TUI и CLI для Plane; здесь только сборка зависимостей (C0, C10).
+// Command platui is a TUI and CLI for Plane; this file only wires dependencies (C0, C10).
 package main
 
 import (
@@ -71,7 +71,7 @@ func stdinIsTTY() bool {
 	return err == nil && fi.Mode()&os.ModeCharDevice != 0
 }
 
-// maxRetries переводит retries из конфига в plane.Options.MaxRetries: 0 (без повторов) → -1.
+// maxRetries maps the config retries value to plane.Options.MaxRetries: 0 (no retries) becomes -1.
 func maxRetries(n int) int {
 	if n == 0 {
 		return -1

@@ -12,7 +12,7 @@ import (
 
 func init() { algo.Init("default") }
 
-// Размеры слэба как у fzf по умолчанию.
+// Slab sizes are the fzf defaults.
 var slabs = sync.Pool{New: func() any { return util.MakeSlab(100*1024, 2048) }}
 
 func lowerRunes(s string) []rune {
@@ -23,7 +23,7 @@ func lowerRunes(s string) []rune {
 	return r
 }
 
-// match — вызов algo.FuzzyMatchV2 с позициями по возрастанию.
+// match calls algo.FuzzyMatchV2 with positions in ascending order.
 func match(pattern []rune, in *util.Chars) (int, []int, bool) {
 	slab := slabs.Get().(*util.Slab)
 	res, pos := algo.FuzzyMatchV2(false, true, true, in, pattern, true, slab)
@@ -39,13 +39,13 @@ func match(pattern []rune, in *util.Chars) (int, []int, bool) {
 	return res.Score, p, true
 }
 
-// Fuzzy — нечёткое совпадение шаблона с s (регистр не важен); pos — позиции рун s.
+// Fuzzy matches a pattern against s fuzzily (case-insensitive); pos holds rune positions in s.
 func Fuzzy(pattern, s string) (score int, pos []int, ok bool) {
 	in := util.RunesToChars([]rune(s))
 	return match(algo.NormalizeRunes(lowerRunes(pattern)), &in)
 }
 
-// Highlight оборачивает подряд идущие совпавшие руны s (позиции pos) в mark.
+// Highlight wraps consecutive matched runes of s (positions pos) in mark.
 func Highlight(s string, pos []int, mark func(string) string) string {
 	if len(pos) == 0 {
 		return s

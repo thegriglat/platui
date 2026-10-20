@@ -13,25 +13,25 @@ import (
 )
 
 func init() {
-	registerAction(action{ID: "search.start", Title: "Поиск по заголовку", Group: "поиск", Keys: []string{"/"},
-		Hint: "поиск", Scopes: []string{"main"}, Run: func(m *model) tea.Cmd {
+	registerAction(action{ID: "search.start", Title: "Search by title", Group: "search", Keys: []string{"/"},
+		Hint: "search", Scopes: []string{"main"}, Run: func(m *model) tea.Cmd {
 			m.s.searching = true
 			return pushScreen(&searchScreen{under: m.top(), text: []rune(m.s.query)})
 		}})
-	registerAction(action{ID: "search.goto", Title: "Перейти по ID", Group: "поиск", Keys: []string{"ctrl+g"},
-		Hint: "Ctrl+G|по ID", Scopes: []string{"main", "kanban", "item"}, Run: func(m *model) tea.Cmd {
+	registerAction(action{ID: "search.goto", Title: "Go to ID", Group: "search", Keys: []string{"ctrl+g"},
+		Hint: "Ctrl+G|go to ID", Scopes: []string{"main", "kanban", "item"}, Run: func(m *model) tea.Cmd {
 			return pushScreen(&searchScreen{under: m.top(), gotoMode: true})
 		}})
 }
 
-// searchScreen — строка ввода поиска (`/`) или перехода по ключу (Ctrl+G) поверх экрана under.
+// searchScreen is the search input line (`/`) or the jump-by-key line (Ctrl+G) on top of the under screen.
 type searchScreen struct {
 	under    screen
 	gotoMode bool
 	text     []rune
 }
 
-func (c *searchScreen) Title() string       { return "поиск" }
+func (c *searchScreen) Title() string       { return "search" }
 func (c *searchScreen) Scope() string       { return "dialog" }
 func (c *searchScreen) CapturesInput() bool { return true }
 
@@ -41,12 +41,12 @@ func (c *searchScreen) isKey() (ident string, seq int, ok bool) {
 
 func (c *searchScreen) line(s *session) string {
 	if c.gotoMode {
-		return "Перейти к: " + string(c.text) + "▏  (Enter — открыть, Esc — отмена)"
+		return "Go to: " + string(c.text) + "▏  (Enter — open, Esc — cancel)"
 	}
 	if id, n, ok := c.isKey(); ok {
-		return "/ " + string(c.text) + "▏  Enter — открыть " + keyText(s, id, n)
+		return "/ " + string(c.text) + "▏  Enter — open " + keyText(s, id, n)
 	}
-	return "/ " + string(c.text) + "▏  найдено " + itoa(len(s.visible()))
+	return "/ " + string(c.text) + "▏  found " + itoa(len(s.visible()))
 }
 
 func keyText(s *session, ident string, seq int) string {
@@ -69,7 +69,7 @@ func (c *searchScreen) close(s *session) tea.Cmd {
 
 func (c *searchScreen) Update(s *session, msg tea.Msg) (screen, tea.Cmd) {
 	if _, ok := msg.(tea.KeyMsg); !ok {
-		// остальные сообщения model уже раздаёт всему стеку, включая under
+		// other messages are already distributed to the whole stack by model, including under
 		return c, nil
 	}
 	k := msg.(tea.KeyMsg)
@@ -88,7 +88,7 @@ func (c *searchScreen) Update(s *session, msg tea.Msg) (screen, tea.Cmd) {
 			return c, tea.Sequence(c.close(s), gotoKey(s, id, n))
 		}
 		if c.gotoMode {
-			s.setStatus("введите ID задачи: PROJ-42 или 42", true)
+			s.setStatus("enter a task ID: PROJ-42 or 42", true)
 			return c, nil
 		}
 		return c, c.close(s)
@@ -133,7 +133,7 @@ func firstID(s *session) string {
 	return ""
 }
 
-// foundMsg — итог перехода по ключу.
+// foundMsg is the result of a jump by key.
 type foundMsg struct {
 	ident string
 	seq   int
@@ -142,10 +142,10 @@ type foundMsg struct {
 	err   error
 }
 
-// gotoKey: задача текущего проекта — по индексу, иначе app.Find (любой проект workspace).
+// gotoKey: a task of the current project is looked up by index, otherwise app.Find (any workspace project).
 func gotoKey(s *session, ident string, seq int) tea.Cmd {
 	if s.project == nil {
-		return func() tea.Msg { return statusMsg{"проект не выбран", true} }
+		return func() tea.Msg { return statusMsg{"no project selected", true} }
 	}
 	if ident == "" {
 		ident = s.project.Identifier
@@ -166,7 +166,7 @@ func gotoKey(s *session, ident string, seq int) tea.Cmd {
 	}
 }
 
-// revealTab переключает таб на состояние задачи, если она не видна в текущем.
+// revealTab switches the tab to the task state if it is not visible in the current one.
 func (s *session) revealTab(it plane.WorkItem) {
 	tl := s.tabList()
 	if s.tab < len(tl) && s.inTab(it, tl[s.tab]) {
@@ -183,7 +183,7 @@ func (s *session) revealTab(it plane.WorkItem) {
 func (s *session) onFound(f foundMsg) tea.Cmd {
 	if f.err != nil {
 		if errors.Is(f.err, app.ErrItemNotFound) || errors.Is(f.err, app.ErrProjectNotFound) {
-			s.setStatus(f.ident+"-"+itoa(f.seq)+" не найдена", true)
+			s.setStatus(f.ident+"-"+itoa(f.seq)+" not found", true)
 		} else {
 			s.setStatus(f.err.Error(), true)
 		}

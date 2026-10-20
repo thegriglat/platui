@@ -8,24 +8,24 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// action — действие с привязкой клавиш. Hint — подпись в строке подсказок:
-// «текст» (клавиша — первая из Keys) или «КЛАВИШИ|текст» (клавиши заданы явно).
+// action is a user action bound to keys. Hint is the label in the hints line:
+// "text" (the key is the first of Keys) or "KEYS|text" (keys given explicitly).
 type action struct {
 	ID     string
 	Title  string
 	Group  string
 	Keys   []string
 	Hint   string
-	Scopes []string // пусто — везде
-	Bulk   bool     // действие над отмеченными
+	Scopes []string // empty: all scopes
+	Bulk   bool     // acts on marked items
 	Run    func(m *model) tea.Cmd
 }
 
-var groupOrder = []string{"навигация", "поиск", "задача", "git", "виды", "канбан"}
+var groupOrder = []string{"navigation", "search", "task", "git", "views", "kanban"}
 
 var registry []action
 
-// registerAction вызывается из init(); дубль ID или конфликт клавиш — panic.
+// registerAction is called from init(); a duplicate ID or key conflict panics.
 func registerAction(a action) {
 	if err := checkActions(append(slices.Clone(registry), a)); err != nil {
 		panic(err)
@@ -40,8 +40,8 @@ func scopesOverlap(a, b []string) bool {
 	return slices.ContainsFunc(a, func(s string) bool { return slices.Contains(b, s) })
 }
 
-// checkActions проверяет уникальность ID и отсутствие конфликтов клавиш в общих областях
-// (пара Bulk/не-Bulk допустима).
+// checkActions checks that IDs are unique and keys do not conflict in shared scopes
+// (a Bulk/non-Bulk pair is allowed).
 func checkActions(list []action) error {
 	ids := map[string]bool{}
 	for i, a := range list {
@@ -65,7 +65,7 @@ func checkActions(list []action) error {
 
 func (a action) in(scope string) bool { return len(a.Scopes) == 0 || slices.Contains(a.Scopes, scope) }
 
-// actionsFor — действия области в порядке групп, затем регистрации.
+// actionsFor returns the scope's actions ordered by group, then by registration.
 func actionsFor(scope string) []action {
 	var out []action
 	for _, a := range registry {
@@ -79,7 +79,7 @@ func actionsFor(scope string) []action {
 	return out
 }
 
-// findAction — действие по клавише; из пары Bulk/не-Bulk выбирается по наличию отметок.
+// findAction returns the action for a key; of a Bulk/non-Bulk pair it picks by whether items are marked.
 func findAction(scope, key string, marked bool) (action, bool) {
 	var found []action
 	for _, a := range registry {
@@ -98,7 +98,7 @@ func findAction(scope, key string, marked bool) (action, bool) {
 	return action{}, false
 }
 
-// hintsLine — строка подсказок области до ширины width; «? справка» всегда последняя.
+// hintsLine renders the scope's hints line up to width; "? help" always comes last.
 func hintsLine(s *session, scope string, width int) string {
 	var parts []string
 	help := ""

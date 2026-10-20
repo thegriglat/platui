@@ -6,7 +6,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
-// stubTable — заглушка таблицы до PT-5b: «ID название», курсор и навигация.
+// stubTable is a table stub until PT-5b: "ID title", cursor and navigation.
 type stubTable struct{ list cursorList }
 
 func newStubTable(*session) pane { return &stubTable{} }
@@ -43,7 +43,7 @@ func (t *stubTable) View(s *session, width, height int) string {
 	vis := s.visible()
 	from, to := t.list.Range()
 	if len(vis) == 0 {
-		return s.st.muted.Render("нет данных")
+		return s.st.muted.Render("no data")
 	}
 	var b []string
 	for i := from; i < to; i++ {

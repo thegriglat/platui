@@ -14,12 +14,12 @@ type entry struct {
 	title   util.Chars
 }
 
-// Index — неизменяемый после New индекс; безопасен для чтения из горутин.
+// Index is immutable after New; safe for reading from goroutines.
 type Index struct {
 	docs []entry
 }
 
-// New строит индекс: заголовки заранее приводятся к рунам.
+// New builds the index: titles are converted to runes up front.
 func New(docs []Doc) *Index {
 	ix := &Index{docs: make([]entry, len(docs))}
 	for i, d := range docs {
@@ -28,7 +28,7 @@ func New(docs []Doc) *Index {
 	return ix
 }
 
-// Len — число документов.
+// Len returns the number of documents.
 func (ix *Index) Len() int { return len(ix.docs) }
 
 func clip(q string) string {
@@ -38,7 +38,7 @@ func clip(q string) string {
 	return q
 }
 
-// Search ищет документы по запросу (И по словам); пустой запрос и запрос-ключ дают nil.
+// Search finds documents for a query (AND over words); an empty query or a key query returns nil.
 func (ix *Index) Search(q string) []Hit {
 	q = clip(q)
 	if _, _, ok := ParseKey(q); ok {
@@ -81,7 +81,7 @@ func (ix *Index) Search(q string) []Hit {
 	return hits
 }
 
-// ParseKey разбирает «PROJ-42», «42», «#42»; иначе ok=false.
+// ParseKey parses "PROJ-42", "42", "#42"; otherwise ok=false.
 func ParseKey(q string) (identifier string, seq int, ok bool) {
 	q = strings.TrimSpace(clip(strings.TrimSpace(q)))
 	q = strings.TrimPrefix(q, "#")
@@ -109,7 +109,7 @@ func validIdent(s string) bool {
 	return s != ""
 }
 
-// Lookup — точный поиск по Key; identifier "" — первый документ с Key, оканчивающимся на "-<seq>".
+// Lookup is an exact search by Key; identifier "" matches the first document whose Key ends with "-<seq>".
 func (ix *Index) Lookup(identifier string, seq int) (id string, ok bool) {
 	n := strconv.Itoa(seq)
 	for _, e := range ix.docs {

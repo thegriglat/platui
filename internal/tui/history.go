@@ -6,13 +6,13 @@ import (
 
 const historyMax = 50
 
-// history — история открытых карточек (в памяти, до historyMax): предыдущие задачи и текущая.
+// history is the history of opened cards (in memory, up to historyMax): previous tasks and the current one.
 type history struct {
-	stack []string // ID предыдущих открытых задач, последняя — ближайшая
-	last  string   // ID последней открытой карточки
+	stack []string // IDs of previously opened tasks, the last is the nearest
+	last  string   // ID of the last opened card
 }
 
-// visit запоминает открытие карточки id: предыдущая уходит в историю.
+// visit records opening card id: the previous one goes to history.
 func (h *history) visit(id string) {
 	if h.last != "" && h.last != id {
 		h.stack = append(h.stack, h.last)
@@ -24,7 +24,7 @@ func (h *history) visit(id string) {
 }
 
 func init() {
-	registerAction(action{ID: "nav.history", Title: "Назад к предыдущей открытой задаче", Group: "навигация",
+	registerAction(action{ID: "nav.history", Title: "Back to previously opened task", Group: "navigation",
 		Keys: []string{"ctrl+o"}, Scopes: cardScopes, Run: func(m *model) tea.Cmd {
 			s := m.s
 			h := &s.hist
@@ -41,14 +41,14 @@ func init() {
 				if m.top().Scope() == "item" {
 					m.pop()
 				}
-				h.last = id // возврат не добавляет текущую в историю
+				h.last = id // going back does not add the current one to history
 				if newItemScreen == nil {
 					return nil
 				}
 				s.cursor, s.openItem = it.ID, it.ID
 				return pushScreen(newItemScreen(s, it))
 			}
-			s.setStatus("история пуста", false)
+			s.setStatus("history is empty", false)
 			return nil
 		}})
 }

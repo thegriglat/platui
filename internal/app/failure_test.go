@@ -15,8 +15,8 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// Аудит PT-45: недоступность API Plane на уровне сервисного слоя. Тесты GAP
-// проверяют ожидаемое («как надо») и пропускаются, пока поведение не исправлено.
+// Audit PT-45: Plane API unavailability at the service layer. GAP tests
+// check the expected behavior and are skipped until the behavior is fixed.
 
 const flKey = "plane_api_secret"
 
@@ -55,7 +55,7 @@ func (e *env) fail(method string, err error) {
 	}
 }
 
-// flWarm прогревает память и диск: проекты, справочники, задачи.
+// flWarm warms memory and disk: projects, reference data, tasks.
 func flWarm(t *testing.T, e *env) {
 	t.Helper()
 	if _, err := e.app.Me(ctx()); err != nil {
@@ -77,19 +77,19 @@ func TestFailureAppRefreshKeepsData(t *testing.T) {
 	for _, err := range []error{flNet, flAuth, &plane.APIError{Status: 503, Message: "x"}} {
 		e.fail("WorkItems", err)
 		if its, ch, got := e.app.RefreshItems(ctx(), "p1"); got == nil || its != nil || !ch.Empty() || !errors.Is(got, err) {
-			t.Fatalf("RefreshItems при %v: its=%v got=%v", err, its, got)
+			t.Fatalf("RefreshItems on %v: its=%v got=%v", err, its, got)
 		}
 		cur, curAt, ok := e.app.CachedItems("p1")
 		if !ok || len(cur) != len(before) || !curAt.Equal(at) {
-			t.Fatalf("данные или время подменены ошибкой: %v %v", cur, curAt)
+			t.Fatalf("data or time replaced by the error: %v %v", cur, curAt)
 		}
 	}
-	// диск тоже не тронут
+	// disk is untouched too
 	e.rebuild()
 	if cur, _, ok := e.app.CachedItems("p1"); !ok || len(cur) != len(before) {
-		t.Fatalf("кэш на диске: %v", cur)
+		t.Fatalf("on-disk cache: %v", cur)
 	}
-	// восстановление само: следующий успешный вызов работает
+	// recovers by itself: the next successful call works
 	e.fail("WorkItems", nil)
 	if _, _, err := e.app.RefreshItems(ctx(), "p1"); err != nil {
 		t.Fatal(err)
@@ -103,7 +103,7 @@ func TestFailureAppReloadKeepsData(t *testing.T) {
 			flWarm(t, e)
 			oldMeta, _ := e.app.Meta(ctx(), "p1")
 			oldItems, _, _ := e.app.CachedItems("p1")
-			// сервер уже отдаёт новое, но обновление обрывается на method
+			// the server already serves new data, but the refresh breaks at method
 			e.api.StatesV["p1"] = e.api.StatesV["p1"][:2]
 			e.api.MembersV["p1"] = nil
 			e.api.LabelsV["p1"] = nil
@@ -115,10 +115,10 @@ func TestFailureAppReloadKeepsData(t *testing.T) {
 			m, _ := e.app.Meta(ctx(), "p1")
 			its, _, _ := e.app.CachedItems("p1")
 			if len(m.States) != len(oldMeta.States) || len(m.Members) != len(oldMeta.Members) || len(m.Labels) != len(oldMeta.Labels) {
-				t.Fatalf("справочники подменены частично: %+v", m)
+				t.Fatalf("reference data partially replaced: %+v", m)
 			}
 			if len(its) != len(oldItems) {
-				t.Fatalf("задачи подменены: %v", its)
+				t.Fatalf("tasks replaced: %v", its)
 			}
 		})
 	}
@@ -132,11 +132,11 @@ func TestFailureAppMetaFirstLoadNotPoisoned(t *testing.T) {
 	}
 	var m Meta
 	if _, ok, _ := e.store.Load(e.app.key("meta", "p1"), &m); ok {
-		t.Fatal("неполные справочники записаны в кэш")
+		t.Fatal("incomplete reference data written to the cache")
 	}
 	e.fail("Labels", nil)
 	if m, err := e.app.Meta(ctx(), "p1"); err != nil || len(m.Labels) != 2 {
-		t.Fatalf("восстановление: %+v %v", m, err)
+		t.Fatalf("recovery: %+v %v", m, err)
 	}
 }
 
@@ -151,52 +151,52 @@ func TestFailureAppMeProjectsRetry(t *testing.T) {
 		t.Fatalf("Projects: %v", err)
 	}
 	if _, err := e.app.Project(ctx(), "PROJ"); !errors.Is(err, plane.ErrUnauthorized) || errors.Is(err, ErrProjectNotFound) {
-		t.Fatalf("Project при 401 принят за «нет проекта»: %v", err)
+		t.Fatalf("Project on 401 taken for \"no project\": %v", err)
 	}
 	e.failAll(nil)
 	if m, err := e.app.Me(ctx()); err != nil || m.ID != "u-me" {
-		t.Fatalf("Me после восстановления: %v %v", m, err)
+		t.Fatalf("Me after recovery: %v %v", m, err)
 	}
 	if p, err := e.app.Project(ctx(), "PROJ"); err != nil || p.ID != "p1" {
-		t.Fatalf("Project после восстановления: %v %v", p, err)
+		t.Fatalf("Project after recovery: %v %v", p, err)
 	}
 }
 
-// Старт при недоступном API: кэш на диске есть, процесс новый (память пуста).
+// Start with the API unavailable: an on-disk cache exists, the process is new (memory empty).
 func TestFailureAppOfflineStartFromDisk(t *testing.T) {
 	e := newEnv(t)
 	flWarm(t, e)
 	if _, err := e.app.Projects(ctx()); err != nil {
 		t.Fatal(err)
 	}
-	e.rebuild() // новый процесс, тот же диск
+	e.rebuild() // new process, same disk
 	e.failAll(flNet)
 
 	t.Run("items", func(t *testing.T) {
 		its, at, ok := e.app.CachedItems("p1")
 		if !ok || len(its) != 2 || !at.Equal(t0) {
-			t.Fatalf("задачи с диска: %v %v %v", its, at, ok)
+			t.Fatalf("tasks from disk: %v %v %v", its, at, ok)
 		}
 	})
 	t.Run("projects", func(t *testing.T) {
 		ps, err := e.app.Projects(ctx())
 		flGap(t, err == nil && len(ps) == 2,
-			"Projects не читает кэш на диске (только пишет): при недоступном API нет списка проектов; правка — app.go Projects (фолбэк на a.load при ошибке сети)")
+			"Projects does not read the on-disk cache (only writes it): with the API unavailable there is no project list; fix: app.go Projects (fall back to a.load on a network error)")
 	})
 	t.Run("meta", func(t *testing.T) {
 		m, err := e.app.Meta(ctx(), "p1")
 		flGap(t, err == nil && len(m.States) > 0,
-			"Meta не читает кэш на диске: без API нет состояний/участников/меток; правка — app.go Meta/fetchMeta (фолбэк на a.load)")
+			"Meta does not read the on-disk cache: without the API there are no states/members/labels; fix: app.go Meta/fetchMeta (fall back to a.load)")
 	})
 	t.Run("me", func(t *testing.T) {
 		m, err := e.app.Me(ctx())
 		flGap(t, err == nil && m.ID != "",
-			"Me не кэшируется на диске: без API нет фильтра «Мои»; TUI не стартует (bootstrap падает на Me); правка — app.go Me")
+			"Me is not cached on disk: without the API there is no \"Mine\" filter; the TUI does not start (bootstrap fails on Me); fix: app.go Me")
 	})
 	t.Run("find in cache", func(t *testing.T) {
 		_, it, err := e.app.Find(ctx(), "PROJ", 42)
 		flGap(t, err == nil && it.ID == "i42",
-			"Find по ключу при недоступном API не работает, хотя задача в кэше: Project() зависит от сети")
+			"Find by key does not work with the API unavailable even though the task is cached: Project() depends on the network")
 	})
 }
 
@@ -211,7 +211,7 @@ func TestFailureAppItemsTimestampTracksFullList(t *testing.T) {
 	}
 	_, at2, _ := e.app.CachedItems("p1")
 	flGap(t, at2.Equal(at),
-		"правка одной задачи (replaceItem→commitItems) обновляет время всего списка: пометка «офлайн, данные от ЧЧ:ММ» будет врать; правка — items.go commitItems (время только у RefreshItems/Reload)")
+		"editing one task (replaceItem→commitItems) updates the time of the whole list: the \"offline, data from HH:MM\" mark would lie; fix: items.go commitItems (time only in RefreshItems/Reload)")
 }
 
 func TestFailureAppNextPollBackoff(t *testing.T) {
@@ -225,20 +225,20 @@ func TestFailureAppNextPollBackoff(t *testing.T) {
 	want := []time.Duration{2 * time.Minute, 4 * time.Minute, 5 * time.Minute, 5 * time.Minute, 5 * time.Minute, 5 * time.Minute}
 	for i := range want {
 		if seq[i] != want[i] {
-			t.Fatalf("backoff %v, ждали %v", seq, want)
+			t.Fatalf("backoff %v, want %v", seq, want)
 		}
 	}
 	if got := NextPoll(base, 5*time.Minute, nil); got != base {
-		t.Fatalf("возврат к базе после успеха: %v", got)
+		t.Fatalf("back to base after success: %v", got)
 	}
 	cur = base
 	for i := 0; i < 8; i++ {
 		cur = NextPoll(base, cur, &plane.APIError{Status: 429})
 	}
 	if cur != 10*time.Minute {
-		t.Fatalf("429: потолок %v", cur)
+		t.Fatalf("429: cap %v", cur)
 	}
-	// 401 не лечится повтором, но опрос продолжается с потолком 5m (как есть)
+	// 401 is not cured by a retry, but polling continues with a 5m cap (as is)
 	if got := NextPoll(base, base, flAuth); got != 2*time.Minute {
 		t.Fatalf("401: %v", got)
 	}
@@ -268,11 +268,11 @@ func TestFailureAppEditsFail(t *testing.T) {
 				before, _, _ := e.app.CachedItems("p1")
 				e.fail(tc.fail, ferr)
 				if err := tc.call(e); !errors.Is(err, ferr) {
-					t.Fatalf("ошибка потеряна или обёрнута без Is: %v", err)
+					t.Fatalf("error lost or wrapped without Is: %v", err)
 				}
 				after, _, _ := e.app.CachedItems("p1")
 				if len(after) != len(before) || after[0].Priority != before[0].Priority || after[0].DescHTML != before[0].DescHTML {
-					t.Fatalf("кэш изменён неудачной правкой: %+v", after)
+					t.Fatalf("cache changed by a failed edit: %+v", after)
 				}
 			})
 		}
@@ -286,11 +286,11 @@ func TestFailureAppBulkPartial(t *testing.T) {
 	st := "s-done"
 	res := e.app.BulkPatch(ctx(), "p1", []string{"i1", "i42"}, plane.WorkItemPatch{StateID: &st})
 	if len(res) != 2 || !errors.Is(res["i1"], flNet) || !errors.Is(res["i42"], flNet) {
-		t.Fatalf("итог по каждой задаче: %v", res)
+		t.Fatalf("result per task: %v", res)
 	}
 	items, _, _ := e.app.CachedItems("p1")
 	if items[0].StateID != "s-todo" {
-		t.Fatalf("кэш изменён: %+v", items[0])
+		t.Fatalf("cache changed: %+v", items[0])
 	}
 }
 
@@ -305,11 +305,11 @@ func TestFailureAppFindErrors(t *testing.T) {
 	}
 	e.fail("WorkItemByKey", flAuth)
 	if _, _, err := e.app.Find(ctx(), "PROJ", 99); !errors.Is(err, plane.ErrUnauthorized) || errors.Is(err, ErrItemNotFound) {
-		t.Fatalf("401 принят за «нет задачи»: %v", err)
+		t.Fatalf("401 taken for \"no task\": %v", err)
 	}
 	e.fail("WorkItemByKey", flNet)
 	if _, _, err := e.app.Find(ctx(), "PROJ", 99); err == nil || errors.Is(err, ErrItemNotFound) {
-		t.Fatalf("сеть принята за «нет задачи»: %v", err)
+		t.Fatalf("network error taken for \"no task\": %v", err)
 	}
 }
 
@@ -320,12 +320,12 @@ func TestFailureAppStartPlaneDown(t *testing.T) {
 	if !errors.Is(err, flNet) {
 		t.Fatalf("err = %v", err)
 	}
-	// git-часть выполнена и видна вызывающему; состояние задачи не менялось
+	// the git part is done and visible to the caller; the task state is unchanged
 	if r.Branch.Name == "" || !r.Branch.Created || r.State != "" || r.Assigned {
-		t.Fatalf("итог: %+v", r)
+		t.Fatalf("result: %+v", r)
 	}
 	if e.item("i1").StateID != "s-todo" {
-		t.Fatal("состояние изменено при ошибке")
+		t.Fatal("state changed on error")
 	}
 }
 
@@ -339,7 +339,7 @@ func TestFailureAppCancelledContext(t *testing.T) {
 	}
 }
 
-// ---- сквозные: настоящий plane.Client против httptest ----
+// ---- end to end: a real plane.Client against httptest ----
 
 type flPlane struct {
 	mode atomic.Value // "ok" | "401" | "500" | "503" | "hang" | "cut2" | "html"
@@ -412,23 +412,23 @@ func flE2E(t *testing.T) (*App, *flPlane, *cache.Mem, string) {
 func TestFailureAppE2EPartialPaginationKeepsFullList(t *testing.T) {
 	a, f, store, _ := flE2E(t)
 	if its, _, err := a.RefreshItems(ctx(), "p1"); err != nil || len(its) != 3 {
-		t.Fatalf("прогрев: %v %v", its, err)
+		t.Fatalf("warm-up: %v %v", its, err)
 	}
 	f.mode.Store("cut2")
 	its, _, err := a.RefreshItems(ctx(), "p1")
 	if err == nil || its != nil {
-		t.Fatalf("обрыв на 2-й странице: its=%v err=%v", its, err)
+		t.Fatalf("drop on page 2: its=%v err=%v", its, err)
 	}
 	if cur, _, ok := a.CachedItems("p1"); !ok || len(cur) != 3 {
-		t.Fatalf("память: %v", cur)
+		t.Fatalf("memory: %v", cur)
 	}
 	var disk []plane.WorkItem
 	if _, ok, _ := store.Load(a.key("items", "p1"), &disk); !ok || len(disk) != 3 {
-		t.Fatalf("диск: %v", disk)
+		t.Fatalf("disk: %v", disk)
 	}
 	f.mode.Store("ok")
 	if its, _, err := a.RefreshItems(ctx(), "p1"); err != nil || len(its) != 3 {
-		t.Fatalf("восстановление: %v %v", its, err)
+		t.Fatalf("recovery: %v %v", its, err)
 	}
 }
 
@@ -445,17 +445,17 @@ func TestFailureAppE2EErrorsTextAndSentinels(t *testing.T) {
 			_, err2 := a.Meta(ctx(), "p1")
 			_, _, err3 := a.RefreshItems(ctx(), "p1")
 			if time.Since(start) > 5*time.Second {
-				t.Fatalf("зависание: %v", time.Since(start))
+				t.Fatalf("hang: %v", time.Since(start))
 			}
 			for _, err := range []error{err1, err2, err3} {
 				if err == nil {
-					t.Fatal("ожидалась ошибка")
+					t.Fatal("expected an error")
 				}
 				if strings.Contains(err.Error(), flKey) || strings.Contains(err.Error(), base) {
-					t.Fatalf("ключ или адрес в тексте ошибки: %v", err)
+					t.Fatalf("key or address in the error text: %v", err)
 				}
 				if errors.Is(err, plane.ErrUnauthorized) != tc.auth {
-					t.Fatalf("сентинел 401/403: %v", err)
+					t.Fatalf("401/403 sentinel: %v", err)
 				}
 			}
 		})

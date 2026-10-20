@@ -10,21 +10,21 @@ import (
 	"github.com/thegriglat/platui/internal/app"
 )
 
-// netState — связь с Plane и сохранённые черновики $EDITOR (C4 v8).
+// netState is the connection to Plane and the $EDITOR drafts saved on failure (C4 v8).
 type netState struct {
-	offline bool      // данные показаны из кэша, сеть недоступна
-	offAt   time.Time // время самых старых показанных данных
-	failing bool      // последнее фоновое обновление или загрузка не удались
+	offline bool      // data is shown from the cache, network unavailable
+	offAt   time.Time // time of the oldest data shown
+	failing bool      // the last background refresh or load failed
 	drafts  map[string]draft
 }
 
-// offlineText — «офлайн, данные от ЧЧ:ММ».
+// offlineText is "offline, data from HH:MM".
 func (n netState) offlineText() string {
-	return "офлайн, данные от " + n.offAt.Format("15:04")
+	return "offline, data from " + n.offAt.Format("15:04")
 }
 
-// errText — текст ошибки загрузки для статусной строки; сетевую ошибку при наличии
-// кэша помечает как офлайн.
+// errText is the load error text for the status line; a network error when a
+// cache exists is marked as offline.
 func (s *session) errText(err error) string {
 	s.net.failing = true
 	msg := err.Error()
@@ -50,20 +50,20 @@ func (s *session) errText(err error) string {
 	return s.net.offlineText() + ": " + msg
 }
 
-// restored снимает офлайн и ошибку; true, если связь действительно восстановилась.
+// restored clears offline and error; true if the connection really recovered.
 func (s *session) restored() bool {
 	was := s.net.offline || s.net.failing
 	s.net.offline, s.net.failing = false, false
 	return was
 }
 
-// draft — сохранённая после ошибки правка: сессия (с подсказками) и время загрузки задачи.
+// draft is an edit saved after an error: the session (with hints) and the task load time.
 type draft struct {
 	sess   *text.EditSession
 	loaded time.Time
 }
 
-// editFailMsg — отправка текста из $EDITOR не удалась; файл сохранён.
+// editFailMsg means sending the $EDITOR text failed; the file is saved.
 type editFailMsg struct {
 	kind, itemID string
 	sess         *text.EditSession
@@ -78,11 +78,11 @@ func (s *session) onEditFail(m editFailMsg) {
 		s.net.drafts = map[string]draft{}
 	}
 	s.net.drafts[draftKey(m.kind, m.itemID)] = draft{m.sess, m.loaded}
-	s.setStatus(fmt.Sprintf("не отправлено, текст сохранён: %s: %v", m.sess.Path, m.err), true)
+	s.setStatus(fmt.Sprintf("not sent, text saved: %s: %v", m.sess.Path, m.err), true)
 }
 
-// savedDraft — сохранённая после ошибки правка (забывается при выдаче; файл
-// удаляет успешная отправка, либо правка заново в редакторе по отказу).
+// savedDraft is an edit saved after an error (forgotten when handed out; the file is
+// removed by a successful send, or by editing again in the editor on refusal).
 func (s *session) savedDraft(kind, itemID string) (draft, bool) {
 	k := draftKey(kind, itemID)
 	d, ok := s.net.drafts[k]

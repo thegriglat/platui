@@ -9,7 +9,7 @@ import (
 	"github.com/thegriglat/platui/internal/plane"
 )
 
-// statEntry — результат app.DiffStat для задачи (loading — запрос в пути).
+// statEntry is the app.DiffStat result for a task (loading: request in flight).
 type statEntry struct {
 	stat    gitbranch.Stat
 	ok      bool
@@ -23,10 +23,10 @@ type diffStatMsg struct {
 	err  error
 }
 
-// statKey — ключ кэша сессии: задача и время обновления.
+// statKey is the session cache key: task and update time.
 func statKey(it plane.WorkItem) string { return fmt.Sprintf("%s|%d", it.ID, it.UpdatedAt.UnixNano()) }
 
-// loadDiffStat запрашивает статистику ветки асинхронно.
+// loadDiffStat requests branch statistics asynchronously.
 func loadDiffStat(s *session, it plane.WorkItem) tea.Cmd {
 	a, p := s.deps.App, *s.project
 	return func() tea.Msg {
@@ -35,7 +35,7 @@ func loadDiffStat(s *session, it plane.WorkItem) tea.Cmd {
 	}
 }
 
-// wantStat: если для задачи ещё нет записи в кэше — помечает «загружается» и возвращает запрос.
+// wantStat: if the task has no cache entry yet, marks it as loading and returns the request.
 func (c *cardView) wantStat(s *session, id string) tea.Cmd {
 	it, ok := s.itemByID(id)
 	if !ok || s.deps.App == nil || s.project == nil {
@@ -49,28 +49,23 @@ func (c *cardView) wantStat(s *session, id string) tea.Cmd {
 	return loadDiffStat(s, it)
 }
 
-// onStat запоминает результат; ошибка — запись «нет ветки» (строки в превью не будет).
+// onStat stores the result; an error yields a "no branch" entry (no line in the preview).
 func (c *cardView) onStat(m diffStatMsg) {
 	c.stats[m.key] = statEntry{stat: m.stat, ok: m.ok && m.err == nil}
 }
 
-// statLine — «Ветка: +ins −del (n файлов)»; пусто, если ветки нет или данные не пришли.
+// statLine returns "Branch: +ins −del (n files)"; empty if there is no branch or no data yet.
 func (c *cardView) statLine(it plane.WorkItem) string {
 	e, ok := c.stats[statKey(it)]
 	if !ok || e.loading || !e.ok {
 		return ""
 	}
-	return fmt.Sprintf("Ветка: +%d −%d (%s)", e.stat.Insertions, e.stat.Deletions, filesWord(e.stat.Files))
+	return fmt.Sprintf("Branch: +%d −%d (%s)", e.stat.Insertions, e.stat.Deletions, filesWord(e.stat.Files))
 }
 
 func filesWord(n int) string {
-	switch m := n % 100; {
-	case m >= 11 && m <= 14:
-		return fmt.Sprintf("%d файлов", n)
-	case n%10 == 1:
-		return fmt.Sprintf("%d файл", n)
-	case n%10 >= 2 && n%10 <= 4:
-		return fmt.Sprintf("%d файла", n)
+	if n == 1 {
+		return "1 file"
 	}
-	return fmt.Sprintf("%d файлов", n)
+	return fmt.Sprintf("%d files", n)
 }

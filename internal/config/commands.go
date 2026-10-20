@@ -76,8 +76,8 @@ func (c *Config) CheckCommandKeys(reserved []string) error {
 	return nil
 }
 
-// checkNoQuotedPlaceholders: значения подставляются уже в одинарных кавычках (RenderCommand),
-// плейсхолдер внутри '…' или "…" ломает экранирование — ошибка конфига.
+// checkNoQuotedPlaceholders: values are substituted already single-quoted (RenderCommand),
+// so a placeholder inside '…' or "…" breaks the escaping — a config error.
 func checkNoQuotedPlaceholders(name, cmd string) error {
 	var q rune
 	rs := []rune(cmd)

@@ -11,14 +11,14 @@ import (
 	"github.com/thegriglat/platui/internal/text"
 )
 
-// createDescMsg — редактор описания закрыт.
+// createDescMsg reports that the description editor was closed.
 type createDescMsg struct {
 	owner *inputScreen
 	sess  *text.EditSession
 	err   error
 }
 
-// createdMsg — итог app.CreateQuick.
+// createdMsg is the result of app.CreateQuick.
 type createdMsg struct {
 	owner *inputScreen
 	item  plane.WorkItem
@@ -26,11 +26,11 @@ type createdMsg struct {
 }
 
 func init() {
-	registerAction(action{ID: "item.new", Title: "Новая задача (название !приоритет @user #метка; Ctrl+E — описание)",
-		Group: "задача", Keys: []string{"n"}, Hint: "новая", Scopes: []string{"main", "kanban"},
+	registerAction(action{ID: "item.new", Title: "New task (title !priority @user #label; Ctrl+E: description)",
+		Group: "task", Keys: []string{"n"}, Hint: "new", Scopes: []string{"main", "kanban"},
 		Run: func(m *model) tea.Cmd {
 			if m.s.project == nil {
-				m.s.setStatus("проект не выбран", true)
+				m.s.setStatus("no project selected", true)
 				return nil
 			}
 			return pushScreen(newCreateScreen(m.s))
@@ -39,8 +39,8 @@ func init() {
 
 func newCreateScreen(s *session) *inputScreen {
 	desc := ""
-	c := &inputScreen{title: "Новая задача: название !приоритет @user #метка",
-		hint: "Enter создать   Ctrl+E описание в $EDITOR   Esc отмена"}
+	c := &inputScreen{title: "New task: title !priority @user #label",
+		hint: "Enter create   Ctrl+E description in $EDITOR   Esc cancel"}
 	c.simCur = -1
 	var simIDs []string
 	c.similar = func(line string) []string {
@@ -67,7 +67,7 @@ func newCreateScreen(s *session) *inputScreen {
 	}
 	c.extra = func() string {
 		if desc != "" {
-			return "описание: " + strings.SplitN(desc, "\n", 2)[0]
+			return "description: " + strings.SplitN(desc, "\n", 2)[0]
 		}
 		return ""
 	}
@@ -75,7 +75,7 @@ func newCreateScreen(s *session) *inputScreen {
 		if key != "ctrl+e" {
 			return nil
 		}
-		sess, err := text.NewEditSession(desc, "Описание задачи (Markdown); пустое — без описания")
+		sess, err := text.NewEditSession(desc, "Task description (Markdown); empty means no description")
 		if err != nil {
 			s.setStatus(err.Error(), true)
 			return func() tea.Msg { return nil }
@@ -86,7 +86,7 @@ func newCreateScreen(s *session) *inputScreen {
 	}
 	c.onSubmit = func(c *inputScreen) tea.Cmd {
 		if strings.TrimSpace(string(c.text)) == "" {
-			s.setStatus("пустое название", true)
+			s.setStatus("empty title", true)
 			return nil
 		}
 		c.busy = true
@@ -104,7 +104,7 @@ func newCreateScreen(s *session) *inputScreen {
 			}
 			defer m.sess.Close()
 			if m.err != nil {
-				s.setStatus("редактор: "+m.err.Error(), true)
+				s.setStatus("editor: "+m.err.Error(), true)
 				return nil
 			}
 			md, err := m.sess.Result()
@@ -127,7 +127,7 @@ func newCreateScreen(s *session) *inputScreen {
 				s.cursor = m.item.ID
 				s.revealTab(m.item)
 			}
-			s.setStatus("создана "+itoaKey(s, m.item.Sequence)+": "+m.item.Name, false)
+			s.setStatus("created "+itoaKey(s, m.item.Sequence)+": "+m.item.Name, false)
 			return popScreen
 		}
 		return nil

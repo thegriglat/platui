@@ -2,7 +2,7 @@ package text
 
 import "strings"
 
-// renderTable переводит таблицу GFM; первая строка — заголовок.
+// renderTable converts a GFM table; the first row is the header.
 func renderTable(n *node) string {
 	var rows [][]*node
 	collectRows(n, &rows)

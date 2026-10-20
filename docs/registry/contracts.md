@@ -13,6 +13,7 @@ generated: true
 Файл собран `docs index` — руками не править.
 
 - certs: C1 v8, C13 v1, C10 v5 — [docs/contracts/certs.md](../contracts/certs.md)
+- english: E1 v1, E2 v1 — [docs/contracts/english.md](../contracts/english.md)
 - tui: C11 v1, C12 v1 — [docs/contracts/tui-features.md](../contracts/tui-features.md)
 - tui: C3 v7 — [docs/contracts/tui-plane.md](../contracts/tui-plane.md)
 - tui: C6 v2, C7 v2, C8 v1, C5 v7, C9 v4, C10 v4 — [docs/contracts/tui-services.md](../contracts/tui-services.md)
