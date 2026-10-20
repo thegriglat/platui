@@ -1,0 +1,90 @@
+# platui — полный пример конфига. Путь: ~/.config/platui/config.yml
+# (или $XDG_CONFIG_HOME/platui/config.yml, или --config <путь>).
+# Неизвестные ключи — ошибка. Показаны значения по умолчанию, если не сказано иное.
+
+# --- Подключение к Plane ---
+base_url: https://api.plane.so   # для self-hosted — URL вашего экземпляра; завершающий «/» срезается
+api_key_env: PLANE_API_KEY       # имя переменной окружения с ключом API
+# api_key: plane_api_xxx         # ИЛИ ключ прямо в файле; задавать можно только одно из двух
+workspace: my-team               # slug workspace из URL Plane (обязательно; workspace один)
+default_project: PROJ            # identifier проекта, открываемого при старте (необязательно)
+web_url: ""                      # базовый URL веб-интерфейса; пусто — выводится из base_url
+
+# --- Ветки git ---
+branch:
+  template: "{identifier}-{sequence}-{slug}"      # плейсхолдеры: {identifier} {sequence} {slug}
+  base: ""                                        # от какой ветки создавать; пусто — от текущего HEAD
+  checkout: true                                  # переключаться на созданную ветку
+  worktree: false                                 # true — создавать ветку в отдельном git worktree
+  worktree_dir: "../{repo}-{branch}"              # плейсхолдеры: {repo} {branch}; относительный путь — от корня репозитория
+  commit_template: "{identifier}-{sequence}: {title}"  # плейсхолдеры: {identifier} {sequence} {title} {slug}
+  remote: origin
+
+# --- Сценарии «старт работы» и «готово к ревью» ---
+workflow:
+  start_state: ""                # имя состояния для старта; пусто — первое состояние группы started
+  review_state: ""               # пусто — состояние «In Review» (без учёта регистра); нет такого — не менять
+
+# --- Merge request в GitLab (через glab) ---
+gitlab:
+  host: ""                       # имя[:порт] без схемы; пусто — host из URL remote
+  repo: ""                       # group/project; пусто — из URL remote
+  target_branch: ""              # цель MR; пусто — ветка по умолчанию проекта
+  draft: false                   # создавать MR как черновик
+  glab: glab                     # имя или путь бинаря glab
+  mr_cache: 10m                  # сколько помнить найденные MR задачи («Go to MR»); 0 — не кэшировать
+
+# --- Табы по состояниям ---
+tabs:
+  states: []                     # имена состояний в порядке табов; пусто — все состояния проекта,
+                                 # кроме групп из hide_groups (по группе, затем по sequence)
+  hide_groups: [cancelled]       # из backlog|unstarted|started|completed|cancelled; действует при пустом states; [] — не скрывать
+  all: true                      # первый таб «Все»
+
+# --- Сохранённые фильтры (не более 9; меню F и палитра команд) ---
+# Непустые критерии объединяются через И, значения внутри списка — через ИЛИ.
+filters:
+  - name: Мои в работе           # обязательно
+    project: ""                  # identifier; пусто — текущий проект
+    mine: true                   # исполнитель — я
+    state_groups: [started]      # из backlog|unstarted|started|completed|cancelled
+    states: []                   # имена состояний (без учёта регистра)
+    priorities: [urgent, high]   # из urgent|high|medium|low|none
+    labels: []                   # имена меток (без учёта регистра)
+    text: ""                     # подстрока в названии (без учёта регистра)
+
+# --- Оформление ---
+theme:
+  no_color: false                # true (или непустая NO_COLOR) — без цветов
+  colors:                        # необязательно; "#RRGGBB" или "0".."255" (ANSI 256)
+    accent: "#7D56F4"            # ключи: accent muted text error success warning selection border
+                                 #        priority_urgent priority_high priority_medium priority_low
+
+# --- Прочее ---
+editor: ""                       # пусто → $VISUAL → $EDITOR → vi
+
+refresh:
+  interval: 2m                   # фоновое обновление; 0 — выключено, иначе не меньше 30s (лимит API 60 запросов/мин)
+  notify: true                   # подсветка и звонок о новых/изменённых задачах
+
+cache:
+  enabled: true                  # кэш на диске для быстрого старта
+  dir: ""                        # пусто → $XDG_CACHE_HOME/platui, иначе ~/.cache/platui
+
+# --- Интерфейс ---
+ui:
+  mouse: true                    # поддержка мыши
+  preview_width: 45              # ширина превью, %: 20..80
+
+# --- Личный todo ---
+todo:
+  path: ""                       # пусто → $XDG_DATA_HOME/platui/todo.md, иначе ~/.local/share/platui/todo.md
+
+# --- Свои команды (клавиша; плейсхолдеры подставляются уже в кавычках — самому кавычки не ставить) ---
+# Плейсхолдеры: {id} {key} {branch} {url} {title} {mr_url}
+commands:
+  - name: Открыть ветку в редакторе
+    key: ""                      # необязательно; не должна совпадать со встроенной клавишей
+    command: code -- {branch}
+    confirm: false               # спрашивать подтверждение
+    output: status               # status | window | none
