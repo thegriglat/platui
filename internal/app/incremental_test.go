@@ -5,6 +5,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/thegriglat/platui/internal/cache"
 	"github.com/thegriglat/platui/internal/plane"
 )
 
@@ -64,5 +65,29 @@ func TestSyncMarkSurvivesEdit(t *testing.T) {
 	e.rebuild() // from the store
 	if got := e.app.syncMark("p1"); !got.Equal(t0) {
 		t.Fatal(got)
+	}
+}
+
+func TestRefreshItemsSkipsUnchangedWrite(t *testing.T) {
+	e := newEnv(t)
+	e.store = cache.NewMem(func() time.Time { return e.now })
+	e.rebuild()
+	if _, _, err := e.app.RefreshItems(ctx(), "p1"); err != nil {
+		t.Fatal(err)
+	}
+	e.now = t0.Add(time.Hour)
+	if _, ch, err := e.app.RefreshItems(ctx(), "p1"); err != nil || !ch.Empty() {
+		t.Fatal(err, ch)
+	}
+	var its []plane.WorkItem
+	if saved, ok, _ := e.store.Load(e.app.itemsKey("p1"), &its); !ok || !saved.Equal(t0) {
+		t.Fatal("list rewritten without changes", saved, ok)
+	}
+	if _, at, _ := e.app.CachedItems("p1"); !at.Equal(e.now) {
+		t.Fatal("list time not moved", at)
+	}
+	e.rebuild() // from the store: the time comes from itemsat
+	if _, at, _ := e.app.CachedItems("p1"); !at.Equal(e.now) {
+		t.Fatal("itemsat not saved", at)
 	}
 }

@@ -71,10 +71,18 @@ func (a *App) CachedItems(projectID string) ([]plane.WorkItem, time.Time, bool) 
 	return its, at, true
 }
 
-// commitItems commits the full list: updates the time and the sync mark too.
-func (a *App) commitItems(projectID string, cur []plane.WorkItem) {
+// commitItems commits the full list: updates the time and the sync mark too;
+// write=false keeps the list file on disk (it has not changed).
+func (a *App) commitItems(projectID string, cur []plane.WorkItem, write bool) {
 	now := a.d.Now()
-	a.storeItems(projectID, cur, now)
+	if write {
+		a.storeItems(projectID, cur, now)
+	} else {
+		a.mu.Lock()
+		a.items[projectID] = slices.Clone(cur)
+		a.itemsAt[projectID] = now
+		a.mu.Unlock()
+	}
 	a.save(a.key("itemsat", projectID), now)
 	var mark time.Time
 	for _, it := range cur {
@@ -164,7 +172,7 @@ func (a *App) RefreshItems(ctx context.Context, projectID string) ([]plane.WorkI
 	if ok {
 		ch = Diff(old, cur)
 	}
-	a.commitItems(projectID, cur)
+	a.commitItems(projectID, cur, !ok || !ch.Empty())
 	return cur, ch, nil
 }
 
@@ -184,7 +192,7 @@ func (a *App) Reload(ctx context.Context, projectID string) (Meta, []plane.WorkI
 	}
 	a.online()
 	a.commitMeta(m)
-	a.commitItems(projectID, cur)
+	a.commitItems(projectID, cur, true)
 	return m, cur, ch, nil
 }
 
