@@ -35,3 +35,13 @@ func TestContractConfigV8Example(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestConfigHTTPHeaders(t *testing.T) {
+	c, err := Parse([]byte(v5Base + "http:\n  headers:\n    CF-Access-Client-Id: a.access\n"))
+	if err != nil || c.HTTPHeaders()["CF-Access-Client-Id"] != "a.access" {
+		t.Fatal(err, c.HTTPHeaders())
+	}
+	if _, err := Parse([]byte(v5Base + "http:\n  headers:\n    \"bad name\": x\n")); err == nil {
+		t.Fatal("want error")
+	}
+}

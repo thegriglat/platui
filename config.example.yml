@@ -94,3 +94,6 @@ commands:
 #   timeout: 30s
 #   retries: 3
 #   ca_file: ~/certs/my-ca.crt   # PEM with trusted CAs (one or more), added to the system ones; for self-hosted with its own CA
+#   headers:                     # extra headers on every Plane API request, e.g. a Cloudflare Access service token
+#     CF-Access-Client-Id: xxxx.access
+#     CF-Access-Client-Secret: xxxx

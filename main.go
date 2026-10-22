@@ -31,7 +31,7 @@ func main() {
 }
 
 func build(cfg *config.Config, repoDir string) (*app.App, error) {
-	hc, err := httpclient.New(httpclient.Options{Timeout: cfg.HTTPTimeout(), CAFile: cfg.HTTPCAFile()})
+	hc, err := httpclient.New(httpclient.Options{Timeout: cfg.HTTPTimeout(), CAFile: cfg.HTTPCAFile(), Headers: cfg.HTTPHeaders()})
 	if err != nil {
 		return nil, err
 	}

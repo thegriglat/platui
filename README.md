@@ -82,6 +82,15 @@ Notes:
 
 If Plane uses a certificate from your own CA, add it to the system ones with `http.ca_file: ~/certs/my-ca.crt` (PEM, one or more certificates). `glab` and `git push` use their own CA settings: `glab config set ca_cert <file> --host <host>`, `git config http.sslCAInfo <file>`.
 
+If Plane sits behind Cloudflare Access (or another proxy that needs fixed headers), set them in `http.headers` — they are sent with every API request:
+
+```yaml
+http:
+  headers:
+    CF-Access-Client-Id: xxxx.access
+    CF-Access-Client-Secret: xxxx
+```
+
 ## Key bindings
 
 Press `?` or `h` in the app for the full list.

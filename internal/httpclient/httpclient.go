@@ -13,11 +13,42 @@ import (
 // Options configures New.
 type Options struct {
 	Timeout time.Duration
-	CAFile  string // path (already expanded); empty — system CAs only
+	CAFile  string            // path (already expanded); empty — system CAs only
+	Headers map[string]string // added to every request (e.g. CF-Access-Client-Id/Secret)
 }
 
-// New returns a client trusting system CAs plus the certificates from CAFile.
+// New returns a client trusting system CAs plus the certificates from CAFile
+// and sending Headers with every request.
 func New(o Options) (*http.Client, error) {
+	c, err := newBase(o)
+	if err != nil {
+		return nil, err
+	}
+	if len(o.Headers) > 0 {
+		base := c.Transport
+		if base == nil {
+			base = http.DefaultTransport
+		}
+		c.Transport = headerTransport{base: base, h: o.Headers}
+	}
+	return c, nil
+}
+
+// headerTransport sets fixed headers on each request.
+type headerTransport struct {
+	base http.RoundTripper
+	h    map[string]string
+}
+
+func (t headerTransport) RoundTrip(r *http.Request) (*http.Response, error) {
+	r = r.Clone(r.Context())
+	for k, v := range t.h {
+		r.Header.Set(k, v)
+	}
+	return t.base.RoundTrip(r)
+}
+
+func newBase(o Options) (*http.Client, error) {
 	c := &http.Client{Timeout: o.Timeout}
 	if o.CAFile == "" {
 		return c, nil

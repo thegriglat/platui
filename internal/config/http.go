@@ -19,9 +19,10 @@ const (
 
 // HTTP configures Plane API requests (C1 v7). nil fields mean defaults.
 type HTTP struct {
-	Timeout *time.Duration `yaml:"timeout"`
-	Retries *int           `yaml:"retries"`
-	CAFile  string         `yaml:"ca_file"`
+	Timeout *time.Duration    `yaml:"timeout"`
+	Retries *int              `yaml:"retries"`
+	CAFile  string            `yaml:"ca_file"`
+	Headers map[string]string `yaml:"headers"`
 }
 
 func (c *Config) validateHTTP() error {
@@ -31,8 +32,16 @@ func (c *Config) validateHTTP() error {
 	if n := c.HTTP.Retries; n != nil && (*n < 0 || *n > MaxHTTPRetries) {
 		return fmt.Errorf("http.retries must be between 0 and %d: %d", MaxHTTPRetries, *n)
 	}
+	for k := range c.HTTP.Headers {
+		if strings.TrimSpace(k) == "" || strings.ContainsAny(k, " \t\r\n:") {
+			return fmt.Errorf("http.headers: invalid header name %q", k)
+		}
+	}
 	return nil
 }
+
+// HTTPHeaders returns extra headers for every Plane request (e.g. Cloudflare Access service token).
+func (c *Config) HTTPHeaders() map[string]string { return c.HTTP.Headers }
 
 // HTTPTimeout returns the per-request timeout.
 func (c *Config) HTTPTimeout() time.Duration {
