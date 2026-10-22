@@ -105,6 +105,26 @@ func (f *Fake) WorkItems(_ context.Context, pid string) ([]plane.WorkItem, error
 	return cloneItems(f.ItemsV[pid]), nil
 }
 
+// WorkItemsUpdated returns the tasks updated at or after since, newest first, and the task count.
+func (f *Fake) WorkItemsUpdated(_ context.Context, pid string, since time.Time) ([]plane.WorkItem, int, error) {
+	defer f.unlock()
+	err := f.enter("WorkItemsUpdated", pid)
+	if e := f.Err["WorkItems"]; err == nil && e != nil { // the same endpoint as WorkItems: failures are shared
+		err = e
+	}
+	if err != nil {
+		return nil, 0, err
+	}
+	var out []plane.WorkItem
+	for _, it := range f.ItemsV[pid] {
+		if !it.UpdatedAt.Before(since) {
+			out = append(out, cloneItem(it))
+		}
+	}
+	slices.SortStableFunc(out, func(a, b plane.WorkItem) int { return b.UpdatedAt.Compare(a.UpdatedAt) })
+	return out, len(f.ItemsV[pid]), nil
+}
+
 func cloneItem(it plane.WorkItem) plane.WorkItem {
 	it.AssigneeIDs = slices.Clone(it.AssigneeIDs)
 	it.LabelIDs = slices.Clone(it.LabelIDs)

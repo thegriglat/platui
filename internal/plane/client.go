@@ -13,6 +13,7 @@ type Client struct {
 	hc                 *http.Client
 	retries            int
 	sleep              func(time.Duration)
+	mon                *Monitor
 }
 
 // Options are the client parameters.
@@ -22,6 +23,7 @@ type Options struct {
 	HTTPClient                         *http.Client
 	MaxRetries                         int
 	Sleep                              func(time.Duration)
+	Monitor                            *Monitor // nil — no monitoring
 }
 
 var _ API = (*Client)(nil)
@@ -30,7 +32,7 @@ var _ API = (*Client)(nil)
 func New(o Options) *Client {
 	c := &Client{
 		base: strings.TrimRight(o.BaseURL, "/"), key: o.APIKey, ws: o.Workspace,
-		web: strings.TrimRight(o.WebURL, "/"), hc: o.HTTPClient, retries: o.MaxRetries, sleep: o.Sleep,
+		web: strings.TrimRight(o.WebURL, "/"), hc: o.HTTPClient, retries: o.MaxRetries, sleep: o.Sleep, mon: o.Monitor,
 	}
 	if c.hc == nil {
 		c.hc = &http.Client{Timeout: 30 * time.Second}

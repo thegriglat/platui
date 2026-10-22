@@ -195,7 +195,7 @@ func TestContractConfigV2UnknownRefreshKey(t *testing.T) {
 
 func TestContractConfigV2Palette(t *testing.T) {
 	want := map[string]string{"accent": "#7D56F4", "muted": "245", "text": "252", "error": "#FF5F87",
-		"success": "#5FD787", "warning": "#FFD75F", "selection": "#3A3A5A", "border": "240",
+		"success": "#5FD787", "warning": "#FFD75F", "selection": "#3A3A5A", "border": "240", "bar": "236",
 		"priority_urgent": "#FF5F5F", "priority_high": "#FFAF5F", "priority_medium": "#FFD75F", "priority_low": "#87AFFF"}
 	c := &Config{}
 	if len(want) != len(ColorKeys) {

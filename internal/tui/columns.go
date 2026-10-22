@@ -225,7 +225,7 @@ func (s *session) itemRow(r row, l colLayout, sel bool) string {
 	parts = append(parts, cell(s.branchMark(it.ID), colBranch), cell(s.mrMark(it.ID), colMR))
 	line := strings.Join(parts, " ")
 	if sel {
-		return s.st.sel.Render(line)
+		return paint(s.st.sel, line)
 	}
 	return line
 }

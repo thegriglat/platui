@@ -64,6 +64,7 @@ type App struct {
 	meta     map[string]Meta
 	items    map[string][]plane.WorkItem
 	itemsAt  map[string]time.Time
+	synced   map[string]time.Time // newest updated_at as of the last sync with Plane
 	timers   map[string]timerRec
 	mrs      map[string][]forge.MR
 	marks    map[string][]string
@@ -84,7 +85,7 @@ func New(d Deps) *App {
 		g := d.Config.GitLab
 		d.Forge = forge.New(forge.Options{Glab: g.Glab, Host: g.Host, Repo: g.Repo})
 	}
-	return &App{d: d, meta: map[string]Meta{}, items: map[string][]plane.WorkItem{}, itemsAt: map[string]time.Time{}, mrs: map[string][]forge.MR{}}
+	return &App{d: d, meta: map[string]Meta{}, items: map[string][]plane.WorkItem{}, itemsAt: map[string]time.Time{}, synced: map[string]time.Time{}, mrs: map[string][]forge.MR{}}
 }
 
 func (a *App) cfg() *config.Config { return a.d.Config }

@@ -73,6 +73,12 @@ func (c *Client) sleepCtx(ctx context.Context, d time.Duration) error {
 
 // do performs a request with 429/503 retries and returns the 2xx body.
 func (c *Client) do(ctx context.Context, method, u string, q url.Values, body any) ([]byte, error) {
+	return c.doPage(ctx, method, u, q, body, 0)
+}
+
+// doPage is do for page page of a list (0 — not a list); the request is recorded in the monitor.
+func (c *Client) doPage(ctx context.Context, method, u string, q url.Values, body any, page int) ([]byte, error) {
+	path := c.shortPath(u)
 	if len(q) > 0 {
 		u += "?" + q.Encode()
 	}
@@ -98,8 +104,10 @@ func (c *Client) do(ctx context.Context, method, u string, q url.Values, body an
 		if payload != nil {
 			req.Header.Set("Content-Type", "application/json")
 		}
+		id := c.mon.start(Request{Start: time.Now(), Method: method, Path: path, Page: page})
 		resp, err := c.hc.Do(req)
 		if err != nil {
+			c.mon.finish(id, 0, 0, "", err)
 			if ctx.Err() != nil {
 				return nil, ctx.Err()
 			}
@@ -111,6 +119,7 @@ func (c *Client) do(ctx context.Context, method, u string, q url.Values, body an
 		}
 		data, rerr := io.ReadAll(resp.Body)
 		resp.Body.Close()
+		c.mon.finish(id, resp.StatusCode, len(data), resp.Header.Get("X-RateLimit-Remaining"), rerr)
 		if rerr != nil {
 			return nil, fmt.Errorf("plane: reading response: %w", rerr)
 		}

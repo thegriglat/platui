@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
+	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/x/ansi"
 )
 
 // action is a user action bound to keys. Hint is the label in the hints line:
@@ -99,39 +101,60 @@ func findAction(scope, key string, marked bool) (action, bool) {
 }
 
 // hintsLine renders the scope's hints line up to width; "? help" always comes last.
+// Keys are highlighted, the line has the bar background.
 func hintsLine(s *session, scope string, width int) string {
-	var parts []string
-	help := ""
+	type hint struct{ key, text string }
+	var parts []hint
+	var help *hint
 	for _, a := range actionsFor(scope) {
 		if a.Hint == "" {
 			continue
 		}
-		text := a.Hint
+		h := hint{text: a.Hint}
 		if k, t, ok := strings.Cut(a.Hint, "|"); ok {
-			text = k + " " + t
+			h = hint{k, t}
 		} else if len(a.Keys) > 0 {
-			text = keyLabel(a.Keys[0]) + " " + a.Hint
+			h.key = keyLabel(a.Keys[0])
 		}
 		if a.ID == "view.help" {
-			help = text
+			help = &h
 		} else {
-			parts = append(parts, text)
+			parts = append(parts, h)
 		}
 	}
-	sep := "  "
-	out := ""
-	for _, p := range parts {
-		next := out + sep + p
-		if help != "" {
-			next += sep + help
+	plain := func(h hint) string { return strings.TrimSpace(h.key + " " + h.text) }
+	const sep = "  "
+	used := 1
+	if help != nil {
+		used += len([]rune(sep + plain(*help)))
+	}
+	var shown []hint
+	for _, h := range parts {
+		n := len([]rune(sep + plain(h)))
+		if len(shown) == 0 {
+			n -= len(sep)
 		}
-		if len([]rune(next)) > width {
+		if used+n > width {
 			break
 		}
-		out += sep + p
+		used += n
+		shown = append(shown, h)
 	}
-	if help != "" {
-		out += sep + help
+	if help != nil {
+		shown = append(shown, *help)
 	}
-	return s.st.muted.Render(clip(strings.TrimPrefix(out, sep), width))
+	var b strings.Builder
+	b.WriteString(s.st.hintText.Render(" "))
+	for i, h := range shown {
+		if i > 0 {
+			b.WriteString(s.st.hintText.Render(sep))
+		}
+		if h.key != "" {
+			b.WriteString(s.st.hintKey.Render(h.key))
+			b.WriteString(s.st.hintText.Render(" "))
+		}
+		b.WriteString(s.st.hintText.Render(h.text))
+	}
+	line := ansi.Truncate(b.String(), width, "")
+	return line + s.st.hintText.Render(strings.Repeat(" ", max(0, width-lipgloss.Width(line))))
 }

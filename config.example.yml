@@ -57,7 +57,7 @@ filters:
 theme:
   no_color: false                # true (or a non-empty NO_COLOR): no colors
   colors:                        # optional; "#RRGGBB" or "0".."255" (ANSI 256)
-    accent: "#7D56F4"            # keys: accent muted text error success warning selection border
+    accent: "#7D56F4"            # keys: accent muted text error success warning selection border bar
                                  #        priority_urgent priority_high priority_medium priority_low
 
 # --- Misc ---

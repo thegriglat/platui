@@ -40,7 +40,7 @@ func programOptions(cfg *config.Config) []tea.ProgramOption {
 
 func (m *model) top() screen { return m.stack[len(m.stack)-1] }
 
-func (m *model) Init() tea.Cmd { return bootstrap(m.s) }
+func (m *model) Init() tea.Cmd { return tea.Batch(bootstrap(m.s), apiTick(m.s)) }
 
 func (m *model) View() string {
 	if m.s.width == 0 {
@@ -80,6 +80,8 @@ func (m *model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case popScreenMsg:
 		m.pop()
 		return m, nil
+	case apiTickMsg:
+		return m, apiTick(m.s)
 	}
 	if _, ok := msg.(openProjectMsg); ok {
 		// switching the project closes the card of the previous project

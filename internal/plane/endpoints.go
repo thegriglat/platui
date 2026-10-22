@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+	"time"
 )
 
 type memberJSON struct {
@@ -95,6 +97,35 @@ func (c *Client) WorkItems(ctx context.Context, projectID string) ([]WorkItem, e
 	return decodeList(c, ctx, c.path("projects", projectID, "work-items"), func(r json.RawMessage) (WorkItem, error) {
 		return c.parseWorkItem(r, projectID)
 	})
+}
+
+// WorkItemsUpdated returns the project tasks updated at or after since (newest first, at
+// least those; pages are read until an older task) and total_count of the project tasks.
+func (c *Client) WorkItemsUpdated(ctx context.Context, projectID string, since time.Time) ([]WorkItem, int, error) {
+	older := func(page []json.RawMessage) bool {
+		if len(page) == 0 {
+			return true
+		}
+		var w struct {
+			UpdatedAt string `json:"updated_at"`
+		}
+		return json.Unmarshal(page[len(page)-1], &w) == nil && parseTime(w.UpdatedAt).Before(since)
+	}
+	raw, total, err := c.getPages(ctx, c.path("projects", projectID, "work-items"), url.Values{"order_by": {"-updated_at"}}, older)
+	if err != nil {
+		return nil, 0, err
+	}
+	out := make([]WorkItem, 0, len(raw))
+	for _, r := range raw {
+		it, err := c.parseWorkItem(r, projectID)
+		if err != nil {
+			return nil, 0, fmt.Errorf("plane: bad item: %w", err)
+		}
+		if !it.UpdatedAt.Before(since) {
+			out = append(out, it)
+		}
+	}
+	return out, total, nil
 }
 
 func (c *Client) itemCall(ctx context.Context, method, projectID, id string, body any) (WorkItem, error) {

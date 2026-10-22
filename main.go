@@ -30,6 +30,9 @@ func main() {
 	os.Exit(code)
 }
 
+// monitor records Plane API requests for the TUI status line and API log.
+var monitor = plane.NewMonitor()
+
 func build(cfg *config.Config, repoDir string) (*app.App, error) {
 	hc, err := httpclient.New(httpclient.Options{Timeout: cfg.HTTPTimeout(), CAFile: cfg.HTTPCAFile(), Headers: cfg.HTTPHeaders()})
 	if err != nil {
@@ -38,7 +41,7 @@ func build(cfg *config.Config, repoDir string) (*app.App, error) {
 	d := app.Deps{
 		API: plane.New(plane.Options{
 			BaseURL: cfg.BaseURL, APIKey: cfg.Key(), Workspace: cfg.Workspace, WebURL: cfg.WebURL,
-			HTTPClient: hc, MaxRetries: maxRetries(cfg.HTTPRetries()),
+			HTTPClient: hc, MaxRetries: maxRetries(cfg.HTTPRetries()), Monitor: monitor,
 		}),
 		Config: cfg,
 	}
@@ -63,7 +66,7 @@ func runTUI(a *app.App, cfg *config.Config, s cli.StartAt) error {
 	if err := cfg.CheckCommandKeys(tui.BuiltinKeys()); err != nil {
 		return err
 	}
-	return tui.Run(tui.Deps{App: a, Config: cfg, Start: tui.StartAt{Project: s.Project, Item: s.Item}})
+	return tui.Run(tui.Deps{App: a, Config: cfg, Start: tui.StartAt{Project: s.Project, Item: s.Item}, Monitor: monitor})
 }
 
 func stdinIsTTY() bool {

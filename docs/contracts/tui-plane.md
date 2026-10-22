@@ -64,6 +64,7 @@ type API interface {
     Members(ctx context.Context, projectID string) ([]Member, error)    // project-members
     Labels(ctx context.Context, projectID string) ([]Label, error)
     WorkItems(ctx context.Context, projectID string) ([]WorkItem, error) // все страницы
+    WorkItemsUpdated(ctx context.Context, projectID string, since time.Time) ([]WorkItem, int, error) // order_by=-updated_at до первой задачи старше since; int — total_count проекта
     WorkItem(ctx context.Context, projectID, id string) (WorkItem, error)
     CreateWorkItem(ctx context.Context, projectID string, n NewWorkItem) (WorkItem, error)
     UpdateWorkItem(ctx context.Context, projectID, id string, p WorkItemPatch) (WorkItem, error)

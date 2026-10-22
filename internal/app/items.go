@@ -71,11 +71,75 @@ func (a *App) CachedItems(projectID string) ([]plane.WorkItem, time.Time, bool) 
 	return its, at, true
 }
 
-// commitItems commits the full list: updates the time too.
+// commitItems commits the full list: updates the time and the sync mark too.
 func (a *App) commitItems(projectID string, cur []plane.WorkItem) {
 	now := a.d.Now()
 	a.storeItems(projectID, cur, now)
 	a.save(a.key("itemsat", projectID), now)
+	var mark time.Time
+	for _, it := range cur {
+		if it.UpdatedAt.After(mark) {
+			mark = it.UpdatedAt
+		}
+	}
+	a.mu.Lock()
+	a.synced[projectID] = mark
+	a.mu.Unlock()
+	a.save(a.key("itemssync", projectID), mark)
+}
+
+// syncMark is the newest updated_at as of the last sync; zero — unknown.
+// Edits of single tasks do not move it: changes made by others before them would be skipped.
+func (a *App) syncMark(projectID string) time.Time {
+	a.mu.Lock()
+	t, ok := a.synced[projectID]
+	a.mu.Unlock()
+	if !ok {
+		a.load(a.key("itemssync", projectID), &t)
+	}
+	return t
+}
+
+// fetchItems reads the tasks: only the changed ones merged into old when there is a sync
+// mark, all of them otherwise or when tasks were removed (the merged count exceeds the total).
+func (a *App) fetchItems(ctx context.Context, projectID string, old []plane.WorkItem, haveOld bool) ([]plane.WorkItem, error) {
+	if since := a.syncMark(projectID); haveOld && !since.IsZero() {
+		upd, total, err := a.d.API.WorkItemsUpdated(ctx, projectID, since)
+		if err != nil {
+			return nil, err
+		}
+		if cur := mergeItems(old, upd); len(cur) == total {
+			return cur, nil
+		}
+	}
+	return a.d.API.WorkItems(ctx, projectID)
+}
+
+// mergeItems replaces the tasks of old with those of upd and adds the new ones;
+// the order is that of the API: newest created first.
+func mergeItems(old, upd []plane.WorkItem) []plane.WorkItem {
+	byID := make(map[string]plane.WorkItem, len(upd))
+	for _, it := range upd {
+		byID[it.ID] = it
+	}
+	cur := make([]plane.WorkItem, 0, len(old)+len(upd))
+	for _, it := range old {
+		if u, ok := byID[it.ID]; ok {
+			it = u
+			delete(byID, it.ID)
+		}
+		cur = append(cur, it)
+	}
+	if len(byID) == 0 {
+		return cur
+	}
+	for _, it := range upd {
+		if _, ok := byID[it.ID]; ok {
+			cur = append(cur, it)
+		}
+	}
+	slices.SortStableFunc(cur, func(a, b plane.WorkItem) int { return b.CreatedAt.Compare(a.CreatedAt) })
+	return cur
 }
 
 // storeItems saves the list with the given time (editing one task does not change it).
@@ -90,13 +154,14 @@ func (a *App) storeItems(projectID string, cur []plane.WorkItem, at time.Time) {
 // RefreshItems loads tasks, computes the differences from the previous snapshot (memory,
 // otherwise cache) and saves. No previous snapshot: Changes is empty.
 func (a *App) RefreshItems(ctx context.Context, projectID string) ([]plane.WorkItem, Changes, error) {
-	cur, err := a.d.API.WorkItems(ctx, projectID)
+	old, _, ok := a.CachedItems(projectID)
+	cur, err := a.fetchItems(ctx, projectID, old, ok)
 	if err != nil {
 		return nil, Changes{}, err
 	}
 	a.online()
 	var ch Changes
-	if old, _, ok := a.CachedItems(projectID); ok {
+	if ok {
 		ch = Diff(old, cur)
 	}
 	a.commitItems(projectID, cur)

@@ -178,7 +178,7 @@ const DefaultRemote = "origin"
 const DefaultRefresh = 2 * time.Minute
 const MinRefresh = 30 * time.Second
 var ColorKeys = []string{"accent", "muted", "text", "error", "success", "warning",
-    "selection", "border", "priority_urgent", "priority_high", "priority_medium", "priority_low"}
+    "selection", "border", "bar", "priority_urgent", "priority_high", "priority_medium", "priority_low"}
 
 func (c *Config) Color(key string) string        // из theme.colors, иначе умолчание пакета; неизвестный ключ — ""
 func (c *Config) ColorsDisabled() bool           // theme.no_color || os.Getenv("NO_COLOR") != ""

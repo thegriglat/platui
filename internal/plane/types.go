@@ -92,6 +92,7 @@ type API interface {
 	Members(ctx context.Context, projectID string) ([]Member, error)
 	Labels(ctx context.Context, projectID string) ([]Label, error)
 	WorkItems(ctx context.Context, projectID string) ([]WorkItem, error)
+	WorkItemsUpdated(ctx context.Context, projectID string, since time.Time) ([]WorkItem, int, error)
 	WorkItem(ctx context.Context, projectID, id string) (WorkItem, error)
 	CreateWorkItem(ctx context.Context, projectID string, n NewWorkItem) (WorkItem, error)
 	UpdateWorkItem(ctx context.Context, projectID, id string, p WorkItemPatch) (WorkItem, error)

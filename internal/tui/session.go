@@ -24,6 +24,7 @@ type Deps struct {
 	Clipboard func(text string) error // nil → OSC52 to os.Stderr
 	Now       func() time.Time        // nil → time.Now
 	Start     StartAt
+	Monitor   *plane.Monitor // nil — no API activity in the status line and no API log
 }
 
 // StartAt is where to start.

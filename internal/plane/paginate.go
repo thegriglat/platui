@@ -7,28 +7,49 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
 )
 
 // getList reads all pages of a list; elems are the raw elements.
 func (c *Client) getList(ctx context.Context, u string) ([]json.RawMessage, error) {
-	var all []json.RawMessage
+	all, _, err := c.getPages(ctx, u, nil, nil)
+	return all, err
+}
+
+// getPages reads pages of a list with extra query parameters until stop(page) is true
+// or the pages end; total is total_count of the first page (0 — absent).
+func (c *Client) getPages(ctx context.Context, u string, extra url.Values, stop func([]json.RawMessage) bool) (all []json.RawMessage, total int, err error) {
 	cursor := ""
-	for {
+	key := fmt.Sprintf("%p", &all) // unique per read: parallel reads of one list are separate
+	defer c.mon.listDone(key)
+	start := time.Now()
+	for page := 1; ; page++ {
 		q := url.Values{"per_page": {"100"}}
+		for k, v := range extra {
+			q[k] = v
+		}
 		if cursor != "" {
 			q.Set("cursor", cursor)
 		}
-		data, err := c.do(ctx, http.MethodGet, u, q, nil)
+		data, err := c.doPage(ctx, http.MethodGet, u, q, nil, page)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		items, next, more, err := splitPage(data)
 		if err != nil {
-			return nil, err
+			return nil, 0, err
 		}
 		all = append(all, items...)
-		if !more || next == "" || next == cursor {
-			return all, nil
+		pages, count := pageTotals(data)
+		if page == 1 {
+			total = count
+		}
+		if stop != nil { // a partial read: the list totals are not its own
+			pages, count = 0, 0
+		}
+		c.mon.listPage(key, ListProgress{Resource: resource(c.shortPath(u)), Start: start, Page: page, Pages: pages, Got: len(all), Count: count})
+		if !more || next == "" || next == cursor || (stop != nil && stop(items)) {
+			return all, total, nil
 		}
 		cursor = next
 	}
@@ -97,4 +118,16 @@ func decodeList[T any](c *Client, ctx context.Context, u string, conv func(json.
 		out = append(out, v)
 	}
 	return out, nil
+}
+
+// pageTotals reads total_pages and total_count of a paginated response (0 — absent).
+func pageTotals(data []byte) (pages, count int) {
+	var env struct {
+		Pages int `json:"total_pages"`
+		Count int `json:"total_count"`
+	}
+	if json.Unmarshal(data, &env) == nil {
+		return env.Pages, env.Count
+	}
+	return 0, 0
 }

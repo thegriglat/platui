@@ -1,6 +1,10 @@
 package tui
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/charmbracelet/lipgloss"
+)
 
 type statusLine struct {
 	text  string
@@ -25,8 +29,23 @@ func (s *session) statusView(width int) string {
 			txt = s.net.offlineText() + " | " + txt
 		}
 	}
-	if s.loading {
+	if s.deps.Monitor == nil {
+		if s.loading {
+			txt, st = "⟳ loading… "+txt, s.st.warn
+		}
+		return st.Render(clip(txt, width))
+	}
+	snap := s.deps.Monitor.Snapshot()
+	if act := s.apiActivity(snap); act != "" {
+		txt, st = strings.TrimSpace(act+"  "+txt), s.st.warn
+	} else if s.loading {
 		txt, st = "⟳ loading… "+txt, s.st.warn
 	}
-	return st.Render(clip(txt, width))
+	right := apiCounters(snap)
+	if lipgloss.Width(right)+10 > width {
+		return st.Render(clip(txt, width))
+	}
+	left := clip(txt, width-lipgloss.Width(right)-1)
+	gap := strings.Repeat(" ", max(1, width-lipgloss.Width(left)-lipgloss.Width(right)))
+	return st.Render(left) + gap + s.st.muted.Render(right)
 }
