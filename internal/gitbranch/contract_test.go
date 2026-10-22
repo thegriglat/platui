@@ -54,7 +54,7 @@ func TestContractGitbranchValidName(t *testing.T) {
 			t.Errorf("%q: %v", n, err)
 		}
 	}
-	for _, n := range []string{"", "a b", "a..b", "-x", "x.lock", "a~b"} {
+	for _, n := range []string{"", "a b", "a..b", "-x", "x.lock", "a~b", "HEAD", "a:b", "a/"} {
 		if err := ValidName(n); err == nil {
 			t.Errorf("%q: expected error", n)
 		}

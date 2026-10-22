@@ -1,14 +1,14 @@
 package gitbranch
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/go-git/go-git/v5/plumbing"
 )
 
 // Item is the task data for the branch name template.
@@ -74,23 +74,16 @@ func WorktreePath(template, toplevel, branch string) string {
 	return filepath.Clean(p)
 }
 
-// ValidName checks name with `git check-ref-format --branch`.
+// ValidName checks name by the rules of `git check-ref-format --branch` (go-git, no process per call).
 func ValidName(name string) error {
 	if name == "" {
 		return errors.New("invalid branch name: empty")
 	}
-	if strings.HasPrefix(name, "-") {
+	if strings.HasPrefix(name, "-") || name == "HEAD" {
 		return fmt.Errorf("invalid branch name %q", name)
 	}
-	cmd := exec.Command("git", "check-ref-format", "--branch", name)
-	var stderr bytes.Buffer
-	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
-		var ee *exec.ExitError
-		if errors.As(err, &ee) {
-			return fmt.Errorf("invalid branch name %q: %s", name, strings.TrimSpace(stderr.String()))
-		}
-		return fmt.Errorf("git check-ref-format: %w", err)
+	if err := plumbing.NewBranchReferenceName(name).Validate(); err != nil {
+		return fmt.Errorf("invalid branch name %q: %w", name, err)
 	}
 	return nil
 }
