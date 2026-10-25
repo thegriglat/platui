@@ -16,11 +16,11 @@ module_branch: "feature/{module}"
 task_branch: "{module}/{task}"
 
 # Каталог, где создаются рабочие копии (git worktree).
-copies_dir: "~"
+copies_dir: "~/worktrees"
 # Рабочая копия модуля.
-module_copy: "{copies}/{project}-{module}"
+module_copy: "{copies}/{project}/{module}"
 # Рабочая копия задачи.
-task_copy: "{copies}/{project}-{module}-{task}"
+task_copy: "{copies}/{project}/{module}-{task}"
 
 # Подготовка новых рабочих копий (module new, task new; повтор — dpcli copy setup [ПУТЬ]).
 # Копия создаётся с --no-checkout, ключи git-crypt копируются в её GIT_DIR, потом checkout.
