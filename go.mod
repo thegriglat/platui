@@ -1,6 +1,6 @@
 module github.com/thegriglat/platui
 
-go 1.24.2
+go 1.25
 
 require gopkg.in/yaml.v3 v3.0.1
 
@@ -12,7 +12,7 @@ require (
 	github.com/charmbracelet/x/ansi v0.11.6
 	github.com/cli/browser v1.3.0
 	github.com/go-git/go-git/v5 v5.16.2
-	github.com/google/renameio/v2 v2.0.1
+	github.com/google/renameio/v2 v2.0.2
 	github.com/junegunn/fzf v0.74.2
 	github.com/muesli/termenv v0.16.0
 	github.com/spf13/cobra v1.10.2
