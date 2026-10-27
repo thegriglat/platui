@@ -13,7 +13,7 @@ require (
 	github.com/cli/browser v1.3.0
 	github.com/go-git/go-git/v5 v5.16.2
 	github.com/google/renameio/v2 v2.0.1
-	github.com/junegunn/fzf v0.74.2
+	github.com/junegunn/fzf v0.74.5
 	github.com/muesli/termenv v0.16.0
 	github.com/spf13/cobra v1.10.2
 	github.com/yuin/goldmark v1.8.6
