@@ -16,7 +16,7 @@ require (
 	github.com/junegunn/fzf v0.74.2
 	github.com/muesli/termenv v0.16.0
 	github.com/spf13/cobra v1.10.2
-	github.com/yuin/goldmark v1.8.6
+	github.com/yuin/goldmark v1.8.7
 	mvdan.cc/xurls/v2 v2.6.0
 )
 
